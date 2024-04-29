@@ -1,0 +1,5 @@
+# python dev objects
+.venv
+
+# local testing objects
+*.json
