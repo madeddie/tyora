@@ -68,10 +68,18 @@ class FormParser(HTMLParser):
             self.record = False
 
 
-def login(login: str, password: str) -> urllib.request.OpenerDirector:
-    # session = requests.Session()
+def get_session() -> urllib.request.OpenerDirector:
     cj = http.cookiejar.FileCookieJar(cookies_file)
-    session = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+    return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+
+
+def is_logged_in() -> bool:
+    res = session.open(base_url)
+    parser = LinkFinderParser("class", "account")
+    parser.feed(res.read())
+    return True
+
+def login(login: str, password: str) -> bool:
     res = session.open(base_url)
 
     parser = LinkFinderParser("class", "account")
@@ -89,8 +97,7 @@ def login(login: str, password: str) -> urllib.request.OpenerDirector:
     session.addheaders = [("referer", res.url)]
     res = session.open(urllib.parse.urljoin(res.url, parser.action), post_data)
 
-    return session
-
+    return is_logged_in()
 
 def read_config(config_file):
     with open(config_file, "r") as f:
@@ -98,9 +105,11 @@ def read_config(config_file):
     return config
 
 
+session = get_session()
+
 def main():
     config = read_config(config_file)
-    session = login(config["username"], config["password"])
+    logged_in = login(config["username"], config["password"])
 
     res = session.open(base_url)
     # soup = BeautifulSoup(res.text, 'html.parser')

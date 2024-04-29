@@ -1,5 +1,6 @@
 # python dev objects
 .venv
+__pycache__
 
 # local testing objects
 *.json
