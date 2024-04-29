@@ -2,9 +2,12 @@ from html.parser import HTMLParser
 import json
 import urllib.parse
 
-import requests
+import http.cookiejar
+import urllib.request
 
 base_url = "https://cses.fi/dsa24k/list/"
+config_file = "moocfi_cses.json"
+cookies_file = "cookies.txt"
 
 
 class LinkFinderParser(HTMLParser):
@@ -13,6 +16,10 @@ class LinkFinderParser(HTMLParser):
         self.link = str()
         self.attr_key = attr_key
         self.attr_value = attr_value
+
+    def feed(self, data: str) -> None:
+        data = data.decode("utf8") if isinstance(data, bytes) else data
+        return super().feed(data)
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         href = None
@@ -35,6 +42,10 @@ class FormParser(HTMLParser):
         self.form = dict()
         self.record = False
 
+    def feed(self, data: str) -> None:
+        data = data.decode("utf8") if isinstance(data, bytes) else data
+        return super().feed(data)
+
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag == "form":
             self.record = True
@@ -54,42 +65,44 @@ class FormParser(HTMLParser):
 
     def handle_endtag(self, tag: str) -> None:
         if tag == "form" and self.record:
-            self.record == False
+            self.record = False
 
 
-def login(login: str, password: str) -> requests.sessions.Session:
-    session = requests.Session()
-    res = session.get(base_url)
+def login(login: str, password: str) -> urllib.request.OpenerDirector:
+    # session = requests.Session()
+    cj = http.cookiejar.FileCookieJar(cookies_file)
+    session = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+    res = session.open(base_url)
 
     parser = LinkFinderParser("class", "account")
-    parser.feed(res.text)
+    parser.feed(res.read())
     login_url = urllib.parse.urljoin(res.url, parser.link)
-    session.headers.update({"referer": res.url})
-    res = session.get(login_url)
+    session.addheaders = [("referer", res.url)]
+    res = session.open(login_url)
 
     parser = FormParser()
-    parser.feed(res.text)
+    parser.feed(res.read())
     form_data = parser.form
     form_data["session[login]"] = login
     form_data["session[password]"] = password
-    session.headers.update({"referer": res.url})
-    res = session.post(urllib.parse.urljoin(res.url, parser.action), data=form_data)
+    post_data = urllib.parse.urlencode(form_data).encode("ascii")
+    session.addheaders = [("referer", res.url)]
+    res = session.open(urllib.parse.urljoin(res.url, parser.action), post_data)
 
     return session
 
 
-def read_config():
-    config_file = "moocfi_cses.json"
+def read_config(config_file):
     with open(config_file, "r") as f:
         config = json.load(f)
     return config
 
 
 def main():
-    config = read_config()
+    config = read_config(config_file)
     session = login(config["username"], config["password"])
 
-    res = session.get(base_url)
+    res = session.open(base_url)
     # soup = BeautifulSoup(res.text, 'html.parser')
     # print(soup.find('a', class_='account').string)
     #
@@ -97,7 +110,7 @@ def main():
     #     completed = '✅' if 'full' in item.find('span', class_='task-score')['class'] else '❌'
     #     print(completed, item.a.get('href'), item.a.string)
 
-    print(res, res.text)
+    print(res, res.read())
 
 
 if __name__ == "__main__":
