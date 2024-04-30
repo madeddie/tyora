@@ -1,3 +1,8 @@
+# TODO: use system specific config and state folders for config files and cookies
+# TODO: add a config method to ask for username and password
+# TODO: add exercise list parse, list of exercises, name, status, possible: week and deadline
+# TODO: UI for checking exercise description
+# TODO: UI for submitting solutions
 from html.parser import HTMLParser
 import json
 import urllib.parse
