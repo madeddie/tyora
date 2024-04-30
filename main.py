@@ -1,9 +1,11 @@
-# TODO: use system specific config and state folders for config files and cookies
+# TODO: use system specific config and state folders for config files and cookies, like ~/.config and ~/.local/state
 # TODO: add a config method to ask for username and password
+# TODO: check validity of config after creation (can we log in?)
 # TODO: add exercise list parse, list of exercises, name, status, possible: week and deadline
 # TODO: UI for checking exercise description
 # TODO: UI for submitting solutions
 from html.parser import HTMLParser
+from getpass import getpass
 import json
 import urllib.parse
 
@@ -11,29 +13,26 @@ import http.cookiejar
 import urllib.request
 
 base_url = "https://cses.fi/dsa24k/list/"
-config_file = "moocfi_cses.json"
-cookies_file = "cookies.txt"
 
 
 class LinkFinderParser(HTMLParser):
-    def __init__(self, attr_key: str, attr_value: str) -> None:
+    def __init__(self, attrib: tuple[str, str | None]) -> None:
         HTMLParser.__init__(self)
-        self.attr_key = attr_key
-        self.attr_value = attr_value
+        self.attrib = attrib
         self.record = False
-        self.data = list()
         self.link = str()
+        self.data = list()
 
     def feed(self, data: str) -> None:
         data = data.decode("utf8") if isinstance(data, bytes) else data
         return super().feed(data)
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        href = None
+        href = ""
         is_valid = False
         if tag == "a":
             for attr in attrs:
-                if attr[0] == self.attr_key and attr[1] == self.attr_value:
+                if attr == self.attrib:
                     is_valid = True
                     self.record = True
                 elif attr[0] == "href":
@@ -85,10 +84,10 @@ class FormParser(HTMLParser):
 
 
 class MoocCsesSession:
-    def __init__(self, configfile: str) -> None:
-        self._configfile = configfile
+    def __init__(self, configfile: str | None = None) -> None:
+        self._configfile = configfile if configfile else "config.json"
         self._config = self._read_config(self._configfile)
-        self._cj = http.cookiejar.LWPCookieJar(cookies_file)
+        self._cj = http.cookiejar.LWPCookieJar(self._config["cookies_file"])
         self._session = self._get_session()
         # self._logged_in = self._login(self._config['username'], self._config['password'])
 
@@ -98,13 +97,12 @@ class MoocCsesSession:
         except FileNotFoundError:
             pass
 
-        print(self._cj)
         return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._cj))
 
     @property
     def _is_logged_in(self) -> bool:
         res = self._session.open(base_url)
-        parser = LinkFinderParser("class", "account")
+        parser = LinkFinderParser(("class", "account"))
         parser.feed(res.read())
 
         return self._config["username"] in next(iter(parser.data), "")
@@ -112,49 +110,83 @@ class MoocCsesSession:
     def _login(self, login: str = "", passwd: str = "") -> bool:
         username = login if login else self._config["username"]
         password = passwd if passwd else self._config["password"]
-        # res = self._session.open(base_url)
         res = self.retrieve(base_url, skip_login=True)
-        print(res.url)
-        parser = LinkFinderParser("class", "account")
+        parser = LinkFinderParser(("class", "account"))
         parser.feed(res.read())
         login_url = urllib.parse.urljoin(res.url, parser.link)
 
         # TODO: move referer logic to the rerieve method
-        self._session.addheaders = [("referer", res.url)]
-        # res = self._session.open(login_url)
-        res = self.retrieve(login_url, skip_login=True)
-        print(res.url)
+        res = self.retrieve(login_url, referer=res.url, skip_login=True)
         parser = FormParser()
         parser.feed(res.read())
         form_data = parser.form
         form_data["session[login]"] = username
         form_data["session[password]"] = password
         post_data = urllib.parse.urlencode(form_data).encode("ascii")
-        print(post_data)
 
-        self._session.addheaders = [("referer", res.url)]
-        # res = self._session.open(urllib.parse.urljoin(res.url, parser.action), post_data)
         res = self.retrieve(
-            urllib.parse.urljoin(res.url, parser.action), post_data, skip_login=True
+            urllib.parse.urljoin(res.url, parser.action),
+            referer=res.url,
+            data=post_data,
+            skip_login=True,
         )
-        print(res.url)
 
         return self._is_logged_in
 
-    def _read_config(self, config_file):
-        with open(config_file, "r") as f:
-            config = json.load(f)
+    def _read_config(self, configfile: str):
+        try:
+            with open(configfile, "r") as f:
+                config = json.load(f)
+                for setting in ("username", "password", "cookies_file"):
+                    assert setting in config
+        except (FileNotFoundError, json.JSONDecodeError):
+            print("Invalid config, generating new one")
+            username = self._ask_input("Your tmc.mooc.fi username: ", True)
+            password = self._ask_input("Your tmc.mooc.fi password: ", True, True)
+            cookies_file = (
+                input("Name of cookies file [cookies.txt]: ") or "cookies.txt"
+            )
+            config = {
+                "username": username,
+                "password": password,
+                "cookies_file": cookies_file,
+            }
+            self._write_config(configfile, config)
+
         return config
 
+    @staticmethod
+    def _ask_input(prompt: str, required: bool = False, masked: bool = False) -> str:
+        if not required:
+            return input(prompt)
+
+        output = ""
+        while not output:
+            if masked:
+                output = getpass(prompt)
+            else:
+                output = input(prompt)
+        return output
+
+    def _write_config(self, configfile: str, config: dict) -> None:
+        with open(configfile, "w+") as f:
+            json.dump(config, f)
+
     # TODO: figure out a better name
-    def retrieve(self, url: str, data=None, skip_login=False):
+    def retrieve(
+        self,
+        url: str,
+        referer: str = "",
+        data: bytes | None = None,
+        skip_login: bool = False,
+    ):
         if not skip_login and not self._is_logged_in:
             if not self._login():
                 raise RuntimeError("Failed to login")
 
-        self._session.addheaders = [("referer", url)]
+        if referer:
+            self._session.addheaders = [("referer", referer)]
         res = self._session.open(url, data)
-        print(self._cj)
         self._cj.save(ignore_discard=True)
 
         return res
@@ -163,7 +195,8 @@ class MoocCsesSession:
 def main():
     import time
 
-    moocsess = MoocCsesSession(config_file)
+    # config_file = "moocfi_cses.json"
+    moocsess = MoocCsesSession()
     start = time.time()
     res = moocsess.retrieve(base_url)
     end = time.time()
