@@ -1,7 +1,7 @@
 # TODO: use system specific config and state folders for config files and cookies, like ~/.config and ~/.local/state
-# TODO: add a config method to ask for username and password
 # TODO: check validity of config after creation (can we log in?)
 # TODO: add exercise list parse, list of exercises, name, status, possible: week and deadline
+# TODO: UI to config username and password
 # TODO: UI for checking exercise description
 # TODO: UI for submitting solutions
 from html.parser import HTMLParser
@@ -11,6 +11,8 @@ import urllib.parse
 
 import http.cookiejar
 import urllib.request
+
+import htmlement
 
 base_url = "https://cses.fi/dsa24k/list/"
 
@@ -89,7 +91,10 @@ class MoocCsesSession:
         self._config = self._read_config(self._configfile)
         self._cj = http.cookiejar.LWPCookieJar(self._config["cookies_file"])
         self._session = self._get_session()
-        # self._logged_in = self._login(self._config['username'], self._config['password'])
+
+    @staticmethod
+    def parse_to_etree(fileobj):
+        return htmlement.parse(fileobj)
 
     def _get_session(self) -> urllib.request.OpenerDirector:
         try:
@@ -102,32 +107,41 @@ class MoocCsesSession:
     @property
     def _is_logged_in(self) -> bool:
         res = self._session.open(base_url)
-        parser = LinkFinderParser(("class", "account"))
-        parser.feed(res.read())
+        root = self.parse_to_etree(res)
+        # parser = LinkFinderParser(("class", "account"))
+        # parser.feed(res.read())
 
-        return self._config["username"] in next(iter(parser.data), "")
+        #return self._config["username"] in next(iter(parser.data), "")
+        return self._config["username"] in root.find('.//a[@class="account"]').text
 
     def _login(self, login: str = "", passwd: str = "") -> bool:
         username = login if login else self._config["username"]
         password = passwd if passwd else self._config["password"]
         res = self.retrieve(base_url, skip_login=True)
-        parser = LinkFinderParser(("class", "account"))
-        parser.feed(res.read())
-        login_url = urllib.parse.urljoin(res.url, parser.link)
+        # parser = LinkFinderParser(("class", "account"))
+        # parser.feed(res.read())
+        # login_url = urllib.parse.urljoin(res.url, parser.link)
+        root = self.parse_to_etree(res)
+        login_url = urllib.parse.urljoin(res.url, root.find('.//a[@class="account"]').get('href'))
 
-        # TODO: move referer logic to the rerieve method
         res = self.retrieve(login_url, referer=res.url, skip_login=True)
-        parser = FormParser()
-        parser.feed(res.read())
-        form_data = parser.form
+        # parser = FormParser()
+        # parser.feed(res.read())
+        # form_data = parser.form
+        root = htmlement.parse(res)
+        action = root.find('.//form').get('action')
+        form_data = dict()
+        for form_input in root.find('.//form').iter('input'):
+            form_data[form_input.get('name')] = form_input.get('value', '')
+
         form_data["session[login]"] = username
         form_data["session[password]"] = password
-        post_data = urllib.parse.urlencode(form_data).encode("ascii")
+        # post_data = urllib.parse.urlencode(form_data).encode("ascii")
 
         res = self.retrieve(
-            urllib.parse.urljoin(res.url, parser.action),
+            urllib.parse.urljoin(res.url, action),
             referer=res.url,
-            data=post_data,
+            data=urllib.parse.urlencode(form_data).encode("ascii"),
             skip_login=True,
         )
 
@@ -172,7 +186,6 @@ class MoocCsesSession:
         with open(configfile, "w+") as f:
             json.dump(config, f)
 
-    # TODO: figure out a better name
     def retrieve(
         self,
         url: str,
@@ -193,32 +206,20 @@ class MoocCsesSession:
 
 
 def main():
-    import time
-
     # config_file = "moocfi_cses.json"
     moocsess = MoocCsesSession()
-    start = time.time()
     res = moocsess.retrieve(base_url)
-    end = time.time()
-    print("Time consumed in working: ", end - start)
+
     # soup = BeautifulSoup(res.text, 'html.parser')
     # print(soup.find('a', class_='account').string)
     #
     # for item in soup.find_all('li', class_='task'):
     #     completed = '✅' if 'full' in item.find('span', class_='task-score')['class'] else '❌'
     #     print(completed, item.a.get('href'), item.a.string)
-
-    # print(res, res.read())
-    start = time.time()
-    res = moocsess.retrieve(base_url)
-    end = time.time()
-    print("Time consumed in working: ", end - start)
-
-    start = time.time()
-    res = moocsess.retrieve(base_url)
-    end = time.time()
-    print("Time consumed in working: ", end - start)
-
+    root = moocsess.parse_to_etree(res)
+    #return res
+    content = root.find('.//div[@class="content"]')
+    #title = 
 
 if __name__ == "__main__":
     main()
