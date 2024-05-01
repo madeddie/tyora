@@ -46,14 +46,17 @@ def open_url(url: str, session: urllib.request.OpenerDirector, referer: str = ""
 
     return res
 
-def login(session: urllib.request.OpenerDirector, username: str, password: str, base_url: str) -> urllib.request.OpenerDirector | bool:
+# NOTE: maybe split this up in multiple functions, this way they become easier to test by simply inject HTML
+# - find_login_url (also useable as input for logged_in() -> bool checker
+# - find_login_form or parse_form in login page
+# - submit_login_form
+def login(session: urllib.request.OpenerDirector, username: str, password: str, base_url: str) -> urllib.request.OpenerDirector | None:
     res = session.open(base_url)
     login_element = htmlement.parse(res).find('.//a[@class="account"]')
     if login_element is not None:
         login_url = urllib.parse.urljoin(res.url, login_element.get('href'))
     else:
-        # raise ValueError("Failed to find login_url")
-        return False
+        raise ValueError("Failed to find login_url")
 
     session.addheaders = [("referer", res.url)]
     res = session.open(login_url)
@@ -62,16 +65,14 @@ def login(session: urllib.request.OpenerDirector, username: str, password: str, 
     if action_element is not None:
         action = action_element.get('action')
     else:
-        # raise ValueError("Failed to find action parameter of login form")
-        return False
+        raise ValueError("Failed to find action parameter of login form")
     form_element = root.find('.//form')
     if form_element is not None:
         form_data = dict()
         for form_input in form_element.iter('input'):
             form_data[form_input.get('name')] = form_input.get('value', '')
     else:
-        # raise ValueError("Failed to find form")
-        return False
+        raise ValueError("Failed to find form")
 
     form_data["session[login]"] = username
     form_data["session[password]"] = password
