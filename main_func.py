@@ -1,6 +1,5 @@
 # TODO: if config doesn't exist fail and ask to run config creation
 # TODO: make sure the correct directories exist
-# TODO: use system specific config and state folders for config files and cookies, like ~/.config and ~/.local/state
 # TODO: check validity of config after creation (can we log in?)
 # TODO: add exercise list parse, list of exercises, name, status, possible: week and deadline
 # TODO: UI to config username and password
@@ -17,13 +16,50 @@ from pathlib import Path
 
 import htmlement
 
+# TODO: make base_url configurable based on course
+base_url = "https://cses.fi/dsa24k/list/"
+config_file = Path.home() / ".config" / "moocfi_cses" / "config.json"
+state_dir = Path.home() / ".local" / "state" / "moocfi_cses"
+
 
 def parse_args(args: list | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description='Interact with mooc.fi CSES instance')
-    parser.add_argument('--username', help='tmc.mooc.fi username')
-    parser.add_argument('--password', help='tmc.mooc.fi password')
+    parser = argparse.ArgumentParser(description="Interact with mooc.fi CSES instance")
+    parser.add_argument("--username", help="tmc.mooc.fi username")
+    parser.add_argument("--password", help="tmc.mooc.fi password")
+    parser.add_argument(
+        "--config",
+        help="Location of config file (default: %(default)s)",
+        default="~/.config/moocfi_cses/config.json",
+    )
+    subparsers = parser.add_subparsers(required=True)
+
+    parser_config = subparsers.add_parser("configure", help="configure moocfi_cses")
+    parser_config.set_defaults(func=create_config)
+
+    parser_list = subparsers.add_parser("list", help="list exercises")
+    parser_list.set_defaults(funct=list_tasks)
 
     return parser.parse_args(args)
+
+
+def create_config(args: argparse.Namespace) -> None:
+    configfile = Path(args.config).expanduser()
+    # TODO: try to read the config and give the values as default values
+    username = input("Your tmc.mooc.fi username: ")
+    password = getpass("Your tmc.mooc.fi password: ")
+    config = {
+        "username": username,
+        "password": password,
+    }
+    print("Writing config to file")
+    with open(configfile, "w") as f:
+        json.dump(config, f)
+
+
+def list_tasks(args: argparse.Namespace) -> None:
+    print("These are you tasks")
+    print("these are the args")
+
 
 def read_config(config_file: Path) -> dict:
     with open(config_file, "r") as f:
@@ -70,26 +106,29 @@ def open_url(
 # - find_login_form or parse_form in login page
 # - submit_login_form
 def find_link(html: str, xpath: str) -> str | None:
-    '''Search for html link by xpath and return the href attribute'''
+    """Search for html link by xpath and return the href attribute"""
     anchor_element = htmlement.fromstring(html).find(xpath)
     if anchor_element is not None:
         return anchor_element.get("href")
 
+
 def parse_form(html: str, xpath: str = ".//form") -> dict | None:
-    '''Search for the first form in html and return dict with action and all other found inputs'''
+    """Search for the first form in html and return dict with action and all other found inputs"""
     form_element = htmlement.fromstring(html).find(xpath)
     if form_element is not None:
         form_data = dict()
         form_data["_action"] = form_element.get("action")
-        for form_input in form_element.iter('input'):
-            form_data[form_input.get('name')] = form_input.get('value', '')
+        for form_input in form_element.iter("input"):
+            form_data[form_input.get("name")] = form_input.get("value", "")
 
         return form_data
+
 
 # TODO: how to make this more functional?
 def submit_form(session: urllib.request.OpenerDirector, url: str, data: dict) -> None:
     form_data = urllib.parse.urlencode(data).encode("ascii")
     session.open(url, data=form_data)
+
 
 def login(
     session: urllib.request.OpenerDirector, username: str, password: str, base_url: str
@@ -104,9 +143,9 @@ def login(
     session.addheaders = [("referer", res.url)]
     res = session.open(login_url)
     root = htmlement.parse(res)
-    form_element = root.find('.//form')
+    form_element = root.find(".//form")
     if form_element is not None:
-        action = form_element.get('action')
+        action = form_element.get("action")
         form_data = dict()
         for form_input in form_element.iter("input"):
             form_data[form_input.get("name")] = form_input.get("value", "")
@@ -125,12 +164,7 @@ def login(
 
 def main():
     args = parse_args()
-    print(args)
-    # TODO: make base_url configurable based on course
-    base_url = "https://cses.fi/dsa24k/list/"
-    config_file = Path.home() / ".config" / "moocfi_cses" / "config.json"
-    state_dir = Path.home() / ".local" / "state" / "moocfi_cses"
-
+    args.func(args)
     config = read_config(config_file)
     cookiejar = http.cookiejar.LWPCookieJar(state_dir / "cookies.txt")
     try:
