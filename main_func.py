@@ -50,6 +50,29 @@ def open_url(url: str, session: urllib.request.OpenerDirector, referer: str = ""
 # - find_login_url (also useable as input for logged_in() -> bool checker
 # - find_login_form or parse_form in login page
 # - submit_login_form
+
+def find_link(html: str, xpath: str) -> str | None:
+    '''Search for html link by xpath and return the href attribute'''
+    anchor_element = htmlement.fromstring(html).find(xpath)
+    if anchor_element is not None:
+        return anchor_element.get("href")
+
+def parse_form(html: str, xpath: str = ".//form") -> dict | None:
+    '''Search for the first form in html and return dict with action and all other found inputs'''
+    form_element = htmlement.fromstring(html).find(xpath)
+    if form_element is not None:
+        form_data = dict()
+        form_data["_action"] = form_element.get("action")
+        for form_input in form_element.iter('input'):
+            form_data[form_input.get('name')] = form_input.get('value', '')
+
+        return form_data
+
+# TODO: how to make this more functional?
+def submit_form(session: urllib.request.OpenerDirector, url: str, data: dict) -> None:
+    form_data = urllib.parse.urlencode(data).encode("ascii")
+    session.open(url, data=form_data)
+
 def login(session: urllib.request.OpenerDirector, username: str, password: str, base_url: str) -> urllib.request.OpenerDirector | None:
     res = session.open(base_url)
     login_element = htmlement.parse(res).find('.//a[@class="account"]')
@@ -61,13 +84,9 @@ def login(session: urllib.request.OpenerDirector, username: str, password: str, 
     session.addheaders = [("referer", res.url)]
     res = session.open(login_url)
     root = htmlement.parse(res)
-    action_element = root.find('.//form')
-    if action_element is not None:
-        action = action_element.get('action')
-    else:
-        raise ValueError("Failed to find action parameter of login form")
     form_element = root.find('.//form')
     if form_element is not None:
+        action = form_element.get('action')
         form_data = dict()
         for form_input in form_element.iter('input'):
             form_data[form_input.get('name')] = form_input.get('value', '')
