@@ -1,225 +1,211 @@
-# TODO: use system specific config and state folders for config files and cookies, like ~/.config and ~/.local/state
+# NOTE: maybe it'd be good to have at least a Session object with the http_request and login methods
+# TODO: if config doesn't exist fail and ask to run config creation
+# TODO: make sure the correct directories exist
 # TODO: check validity of config after creation (can we log in?)
 # TODO: add exercise list parse, list of exercises, name, status, possible: week and deadline
-# TODO: UI to config username and password
 # TODO: UI for checking exercise description
 # TODO: UI for submitting solutions
-from html.parser import HTMLParser
+import argparse
 from getpass import getpass
 import json
 import urllib.parse
-
 import http.cookiejar
+import http.client
 import urllib.request
+from pathlib import Path
 
 import htmlement
 
-base_url = "https://cses.fi/dsa24k/list/"
 
+class Session():
+    def __init__(self, username: str, password: str, base_url: str, cookiejar: http.cookiejar.CookieJar | None = None) -> None:
+        self.username = username
+        self.password = password
+        self.base_url = base_url
+        self.cookiejar = cookiejar if cookiejar else http.cookiejar.CookieJar()
+        self.session = self.get_session()
 
-class LinkFinderParser(HTMLParser):
-    def __init__(self, attrib: tuple[str, str | None]) -> None:
-        HTMLParser.__init__(self)
-        self.attrib = attrib
-        self.record = False
-        self.link = str()
-        self.data = list()
-
-    def feed(self, data: str) -> None:
-        data = data.decode("utf8") if isinstance(data, bytes) else data
-        return super().feed(data)
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        href = ""
-        is_valid = False
-        if tag == "a":
-            for attr in attrs:
-                if attr == self.attrib:
-                    is_valid = True
-                    self.record = True
-                elif attr[0] == "href":
-                    href = attr[1]
-
-            if is_valid:
-                self.link = href
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag == "a" and self.record:
-            self.record = False
-
-    def handle_data(self, data: str) -> None:
-        if self.record:
-            self.data.append(data)
-
-
-class FormParser(HTMLParser):
-    def __init__(self):
-        HTMLParser.__init__(self)
-        self.action = str()
-        self.form = dict()
-        self.record = False
-
-    def feed(self, data: str) -> None:
-        data = data.decode("utf8") if isinstance(data, bytes) else data
-        return super().feed(data)
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag == "form":
-            self.record = True
-            for attr in attrs:
-                if attr[0] == "action":
-                    self.action = attr[1]
-        elif tag == "input" and self.record:
-            name = ""
-            value = ""
-            for attr in attrs:
-                if attr[0] == "name":
-                    name = attr[1]
-                elif attr[0] == "value":
-                    value = attr[1]
-            if name:
-                self.form[name] = value
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag == "form" and self.record:
-            self.record = False
-
-
-class MoocCsesSession:
-    def __init__(self, configfile: str | None = None) -> None:
-        self._configfile = configfile if configfile else "config.json"
-        self._config = self._read_config(self._configfile)
-        self._cj = http.cookiejar.LWPCookieJar(self._config["cookies_file"])
-        self._session = self._get_session()
-
-    @staticmethod
-    def parse_to_etree(fileobj):
-        return htmlement.parse(fileobj)
-
-    def _get_session(self) -> urllib.request.OpenerDirector:
-        try:
-            self._cj.load(ignore_discard=True)
-        except FileNotFoundError:
-            pass
-
-        return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._cj))
+    def get_session(self) -> urllib.request.OpenerDirector:
+        return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.cookiejar))
 
     @property
-    def _is_logged_in(self) -> bool:
-        res = self._session.open(base_url)
-        root = self.parse_to_etree(res)
-        # parser = LinkFinderParser(("class", "account"))
-        # parser.feed(res.read())
+    def is_logged_in(self) -> bool:
+        res = self.session.open(self.base_url)
+        login_link = find_link(res.read(), './/a[@class="account"]')
+        if self.username in login_link.get("text", ""):
+            return True
 
-        #return self._config["username"] in next(iter(parser.data), "")
-        return self._config["username"] in root.find('.//a[@class="account"]').text
+        return False
 
-    def _login(self, login: str = "", passwd: str = "") -> bool:
-        username = login if login else self._config["username"]
-        password = passwd if passwd else self._config["password"]
-        res = self.retrieve(base_url, skip_login=True)
-        # parser = LinkFinderParser(("class", "account"))
-        # parser.feed(res.read())
-        # login_url = urllib.parse.urljoin(res.url, parser.link)
-        root = self.parse_to_etree(res)
-        login_url = urllib.parse.urljoin(res.url, root.find('.//a[@class="account"]').get('href'))
+    # TODO: add a debug flag/verbose flag and allow printing of html and forms
+    # TODO: see if we can suffice with passing the referer header to the open/http_request method instead of to the session
+    def login(self) -> None:
+        if self.is_logged_in:
+            return
 
-        res = self.retrieve(login_url, referer=res.url, skip_login=True)
-        # parser = FormParser()
-        # parser.feed(res.read())
-        # form_data = parser.form
-        root = htmlement.parse(res)
-        action = root.find('.//form').get('action')
-        form_data = dict()
-        for form_input in root.find('.//form').iter('input'):
-            form_data[form_input.get('name')] = form_input.get('value', '')
+        res = self.session.open(self.base_url)
+        login_link = find_link(res.read(), './/a[@class="account"]')
+        if login_link:
+            login_url = urllib.parse.urljoin(res.url, login_link.get("href"))
+        else:
+            raise ValueError("Failed to find login_url")
 
-        form_data["session[login]"] = username
-        form_data["session[password]"] = password
-        # post_data = urllib.parse.urlencode(form_data).encode("ascii")
+        self.session.addheaders = [("referer", res.url)]
+        res = self.session.open(login_url)
+        login_form = parse_form(res.read(), ".//form")
+        if login_form:
+            action = login_form.get("_action")
+            login_form.pop("_action")
+        else:
+            raise ValueError("Failed to find form")
 
-        res = self.retrieve(
-            urllib.parse.urljoin(res.url, action),
-            referer=res.url,
-            data=urllib.parse.urlencode(form_data).encode("ascii"),
-            skip_login=True,
-        )
+        login_form["session[login]"] = self.username
+        login_form["session[password]"] = self.password
 
-        return self._is_logged_in
+        self.session.addheaders = [("referer", res.url)]
+        submit_form(self.session, urllib.parse.urljoin(res.url, action), login_form)
 
-    def _read_config(self, configfile: str):
-        try:
-            with open(configfile, "r") as f:
-                config = json.load(f)
-                for setting in ("username", "password", "cookies_file"):
-                    assert setting in config
-        except (FileNotFoundError, json.JSONDecodeError):
-            print("Invalid config, generating new one")
-            username = self._ask_input("Your tmc.mooc.fi username: ", True)
-            password = self._ask_input("Your tmc.mooc.fi password: ", True, True)
-            cookies_file = (
-                input("Name of cookies file [cookies.txt]: ") or "cookies.txt"
-            )
-            config = {
-                "username": username,
-                "password": password,
-                "cookies_file": cookies_file,
-            }
-            self._write_config(configfile, config)
-
-        return config
-
-    @staticmethod
-    def _ask_input(prompt: str, required: bool = False, masked: bool = False) -> str:
-        if not required:
-            return input(prompt)
-
-        output = ""
-        while not output:
-            if masked:
-                output = getpass(prompt)
-            else:
-                output = input(prompt)
-        return output
-
-    def _write_config(self, configfile: str, config: dict) -> None:
-        with open(configfile, "w+") as f:
-            json.dump(config, f)
-
-    def retrieve(
+    def http_request(
         self,
         url: str,
         referer: str = "",
         data: bytes | None = None,
-        skip_login: bool = False,
-    ):
-        if not skip_login and not self._is_logged_in:
-            if not self._login():
-                raise RuntimeError("Failed to login")
-
+    ) -> http.client.HTTPResponse:
         if referer:
-            self._session.addheaders = [("referer", referer)]
-        res = self._session.open(url, data)
-        self._cj.save(ignore_discard=True)
+            self.session.addheaders = [("referer", referer)]
+        res = self.session.open(url, data)
 
         return res
 
 
-def main():
-    # config_file = "moocfi_cses.json"
-    moocsess = MoocCsesSession()
-    res = moocsess.retrieve(base_url)
 
-    # soup = BeautifulSoup(res.text, 'html.parser')
-    # print(soup.find('a', class_='account').string)
-    #
-    # for item in soup.find_all('li', class_='task'):
-    #     completed = '✅' if 'full' in item.find('span', class_='task-score')['class'] else '❌'
-    #     print(completed, item.a.get('href'), item.a.string)
-    root = moocsess.parse_to_etree(res)
-    #return res
-    content = root.find('.//div[@class="content"]')
-    #title = 
+def parse_args(args: list | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Interact with mooc.fi CSES instance")
+    parser.add_argument("--username", help="tmc.mooc.fi username")
+    parser.add_argument("--password", help="tmc.mooc.fi password")
+    parser.add_argument(
+        "--config",
+        help="Location of config file (default: %(default)s)",
+        default="~/.config/moocfi_cses/config.json",
+    )
+    subparsers = parser.add_subparsers(required=True)
+
+    parser_config = subparsers.add_parser("configure", help="configure moocfi_cses")
+    parser_config.set_defaults(cmd="configure")
+
+    parser_list = subparsers.add_parser("list", help="list exercises")
+    parser_list.set_defaults(cmd="list")
+
+    return parser.parse_args(args)
+
+
+def create_config() -> dict[str, str]:
+    # TODO: try to read an existing config file and give the values as default values
+    username = input("Your tmc.mooc.fi username: ")
+    password = getpass("Your tmc.mooc.fi password: ")
+    config = {
+        "username": username,
+        "password": password,
+    }
+
+    return config
+
+
+def write_config(config_file: str, config: dict) -> None:
+    print("Writing config to file")
+    with open(config_file, "w") as f:
+        json.dump(config, f)
+
+
+def read_config(configfile: str) -> dict:
+    file = Path(configfile).expanduser()
+    with open(file, "r") as f:
+        config = json.load(f)
+        for setting in ("username", "password"):
+            assert setting in config
+    return config
+
+
+# TODO: todo todo
+def list_tasks(html: str | bytes) -> None:
+    print("These are you tasks")
+    print("these are the args")
+    print(html)
+
+
+def get_cookiejar(cookiefile: str) -> http.cookiejar.LWPCookieJar:
+    cookiefile = str(Path("cookiefile").expanduser())
+    cookiejar = http.cookiejar.LWPCookieJar(cookiefile)
+    try:
+        cookiejar.load(ignore_discard=True)
+    except FileNotFoundError:
+        # TODO: handle exception?
+        pass
+
+    return cookiejar
+
+
+# NOTE: maybe split this up in multiple functions, this way they become easier to test by simply inject HTML
+# - find_login_url (also useable as input for logged_in() -> bool checker
+# - find_login_form or parse_form in login page
+# - submit_login_form
+def find_link(html: str, xpath: str) -> dict[str, str]:
+    """Search for html link by xpath and return dict with href and text"""
+    anchor_element = htmlement.fromstring(html).find(xpath)
+    link_data = dict()
+    if anchor_element is not None:
+        link_data["href"] = anchor_element.get("href")
+        link_data["text"] = anchor_element.text
+
+    return link_data
+
+
+def parse_form(html: str, xpath: str = ".//form") -> dict[str, str]:
+    """Search for the first form in html and return dict with action and all other found inputs"""
+    form_element = htmlement.fromstring(html).find(xpath)
+    form_data = dict()
+    if form_element is not None:
+        form_data["_action"] = form_element.get("action")
+        for form_input in form_element.iter("input"):
+            form_data[form_input.get("name")] = form_input.get("value", "")
+
+    return form_data
+
+def parse_tasks(html: str):
+    '''Parse html to find tasks and their status, return something useful, possibly a specific data class'''
+    ...
+
+
+# TODO: how to make this more functional?
+def submit_form(session: urllib.request.OpenerDirector, url: str, data: dict) -> None:
+    form_data = urllib.parse.urlencode(data).encode("ascii")
+    session.open(url, data=form_data)
+
+
+
+def main() -> None:
+    # TODO: make base_url configurable based on course
+    base_url = "https://cses.fi/dsa24k/list/"
+    state_dir = "~/.local/state/moocfi_cses"
+
+    args = parse_args()
+
+    if args.cmd == "configure":
+        config = create_config()
+        write_config(args.config, config)
+        return
+
+    config = read_config(args.config)
+
+    cookiejar = get_cookiejar(str(Path(state_dir + "/cookies.txt").expanduser()))
+    session = Session(username=config['username'], password=config['password'], base_url=base_url, cookiejar=cookiejar)
+    session.login()
+    cookiejar.save(ignore_discard=True)
+
+    if args.cmd == "list":
+        res = session.http_request(base_url)
+        list_tasks(res.read())
+
 
 if __name__ == "__main__":
     main()
