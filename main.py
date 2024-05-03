@@ -134,7 +134,7 @@ def list_tasks(html: str | bytes) -> None:
 
 
 def get_cookiejar(cookiefile: str) -> http.cookiejar.LWPCookieJar:
-    cookiefile = str(Path("cookiefile").expanduser())
+    cookiefile = str(Path(cookiefile).expanduser())
     cookiejar = http.cookiejar.LWPCookieJar(cookiefile)
     try:
         cookiejar.load(ignore_discard=True)
