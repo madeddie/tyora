@@ -1,4 +1,3 @@
-# NOTE: maybe it'd be good to have at least a Session object with the http_request and login methods
 # TODO: if config doesn't exist fail and ask to run config creation
 # TODO: make sure the correct directories exist
 # TODO: check validity of config after creation (can we log in?)
@@ -17,8 +16,14 @@ from pathlib import Path
 import htmlement
 
 
-class Session():
-    def __init__(self, username: str, password: str, base_url: str, cookiejar: http.cookiejar.CookieJar | None = None) -> None:
+class Session:
+    def __init__(
+        self,
+        username: str,
+        password: str,
+        base_url: str,
+        cookiejar: http.cookiejar.CookieJar | None = None,
+    ) -> None:
         self.username = username
         self.password = password
         self.base_url = base_url
@@ -26,7 +31,9 @@ class Session():
         self.session = self.get_session()
 
     def get_session(self) -> urllib.request.OpenerDirector:
-        return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.cookiejar))
+        return urllib.request.build_opener(
+            urllib.request.HTTPCookieProcessor(self.cookiejar)
+        )
 
     @property
     def is_logged_in(self) -> bool:
@@ -76,7 +83,6 @@ class Session():
         res = self.session.open(url, data)
 
         return res
-
 
 
 def parse_args(args: list | None = None) -> argparse.Namespace:
@@ -171,8 +177,9 @@ def parse_form(html: str, xpath: str = ".//form") -> dict[str, str]:
 
     return form_data
 
+
 def parse_tasks(html: str):
-    '''Parse html to find tasks and their status, return something useful, possibly a specific data class'''
+    """Parse html to find tasks and their status, return something useful, possibly a specific data class"""
     ...
 
 
@@ -180,7 +187,6 @@ def parse_tasks(html: str):
 def submit_form(session: urllib.request.OpenerDirector, url: str, data: dict) -> None:
     form_data = urllib.parse.urlencode(data).encode("ascii")
     session.open(url, data=form_data)
-
 
 
 def main() -> None:
@@ -198,7 +204,12 @@ def main() -> None:
     config = read_config(args.config)
 
     cookiejar = get_cookiejar(str(Path(state_dir + "/cookies.txt").expanduser()))
-    session = Session(username=config['username'], password=config['password'], base_url=base_url, cookiejar=cookiejar)
+    session = Session(
+        username=config["username"],
+        password=config["password"],
+        base_url=base_url,
+        cookiejar=cookiejar,
+    )
     session.login()
     cookiejar.save(ignore_discard=True)
 
