@@ -1,3 +1,4 @@
+# FIX: switch to using requests, uploading files with urllib.request is a pain!!!
 # TODO: if config doesn't exist fail and ask to run config creation
 # TODO: make sure the correct directories exist
 # TODO: check validity of config after creation (can we log in?)
@@ -5,6 +6,7 @@
 # TODO: UI for checking exercise description
 # TODO: UI for submitting solutions
 import argparse
+from dataclasses import dataclass
 from getpass import getpass
 import json
 import urllib.parse
@@ -14,6 +16,7 @@ import urllib.request
 from pathlib import Path
 
 import htmlement
+import requests
 
 
 class Session:
@@ -30,20 +33,22 @@ class Session:
         self.cookiejar = cookiejar if cookiejar else http.cookiejar.CookieJar()
         self.session = self.get_session()
 
-    def get_session(self) -> urllib.request.OpenerDirector:
-        return urllib.request.build_opener(
-            urllib.request.HTTPCookieProcessor(self.cookiejar)
-        )
+    def get_session(self) -> requests.Session:
+        return requests.Session()
 
     @property
     def is_logged_in(self) -> bool:
-        res = self.session.open(self.base_url)
+        res = self.http_request(self.base_url)
         login_link = find_link(res.read(), './/a[@class="account"]')
         if self.username in login_link.get("text", ""):
             return True
 
         return False
 
+    # NOTE: maybe split this up in multiple functions, this way they become easier to test by simply inject HTML
+    # - find_login_url (also useable as input for logged_in() -> bool checker
+    # - find_login_form or parse_form in login page
+    # - submit_login_form
     # TODO: add a debug flag/verbose flag and allow printing of html and forms
     # TODO: see if we can suffice with passing the referer header to the open/http_request method instead of to the session
     def login(self) -> None:
@@ -72,11 +77,12 @@ class Session:
         self.session.addheaders = [("referer", res.url)]
         submit_form(self.session, urllib.parse.urljoin(res.url, action), login_form)
 
+    # TODO: check if data is dict and encode it (probably not needed when switching to requests)
     def http_request(
         self,
         url: str,
         referer: str = "",
-        data: bytes | None = None,
+        data: dict | bytes | None = None,
     ) -> http.client.HTTPResponse:
         if referer:
             self.session.addheaders = [("referer", referer)]
@@ -89,6 +95,7 @@ def parse_args(args: list | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Interact with mooc.fi CSES instance")
     parser.add_argument("--username", help="tmc.mooc.fi username")
     parser.add_argument("--password", help="tmc.mooc.fi password")
+    parser.add_argument("--course", help="SLUG of the course (default: %(default)s)", default="dsa24k"),
     parser.add_argument(
         "--config",
         help="Location of config file (default: %(default)s)",
@@ -132,13 +139,6 @@ def read_config(configfile: str) -> dict:
     return config
 
 
-# TODO: todo todo
-def list_tasks(html: str | bytes) -> None:
-    print("These are you tasks")
-    print("these are the args")
-    print(html)
-
-
 def get_cookiejar(cookiefile: str) -> http.cookiejar.LWPCookieJar:
     cookiefile = str(Path(cookiefile).expanduser())
     cookiejar = http.cookiejar.LWPCookieJar(cookiefile)
@@ -151,10 +151,6 @@ def get_cookiejar(cookiefile: str) -> http.cookiejar.LWPCookieJar:
     return cookiejar
 
 
-# NOTE: maybe split this up in multiple functions, this way they become easier to test by simply inject HTML
-# - find_login_url (also useable as input for logged_in() -> bool checker
-# - find_login_form or parse_form in login page
-# - submit_login_form
 def find_link(html: str, xpath: str) -> dict[str, str]:
     """Search for html link by xpath and return dict with href and text"""
     anchor_element = htmlement.fromstring(html).find(xpath)
@@ -177,10 +173,56 @@ def parse_form(html: str, xpath: str = ".//form") -> dict[str, str]:
 
     return form_data
 
+@dataclass
+class Task:
+    id: str
+    name: str
+    complete: bool
 
-def parse_tasks(html: str):
+# NOTE: I could simply use html2text to output the list of tasks
+# it needs some work to replace the <span task-score icon full with an actual icon
+# and do we want people to choose the task by name or by ID (or both?)
+def parse_task_list(html: str | bytes) -> list[Task]:
     """Parse html to find tasks and their status, return something useful, possibly a specific data class"""
+    content_element = htmlement.fromstring(html).find('.//div[@class="content"]')
+    task_list = list()
+    if content_element is not None:
+        for item in content_element.findall('.//li[@class="task"]'):
+            id = name = span_class = ''
+            link_item = item.find('a')
+            if link_item is not None:
+                name = link_item.text or ''
+                id = link_item.get('href', '').split('/')[-1]
+            span_item = item.find('span[@class!="detail"]')
+            if span_item is not None:
+                span_class = span_item.get('class', '')
+                "i❌  ✅ X or ✔"
+            if id and name and span_class:
+                task = Task(
+                        id=id,
+                        name=name,
+                        complete="full" in span_class,
+                )
+                task_list.append(task)
+
+    return task_list
+
+# TODO: todo todo todo
+def submit_task(task_id: str, filename: str) -> None:
+    '''submit file to the submit form or task_id'''
+    # NOTE: use parse_form and submit_form
     ...
+
+# TODO: todo todo todo
+def parse_task(html: str | bytes, task: Task) -> Task:
+    task = Task("a", "b", True)
+    return task
+
+# TODO: todo todo
+def list_tasks(html: str | bytes) -> None:
+    print("These are you tasks")
+    print("these are the args")
+    print(html)
 
 
 # TODO: how to make this more functional?
@@ -190,11 +232,10 @@ def submit_form(session: urllib.request.OpenerDirector, url: str, data: dict) ->
 
 
 def main() -> None:
-    # TODO: make base_url configurable based on course
-    base_url = "https://cses.fi/dsa24k/list/"
     state_dir = "~/.local/state/moocfi_cses"
 
     args = parse_args()
+    base_url = f"https://cses.fi/{args.course}/list/"
 
     if args.cmd == "configure":
         config = create_config()
@@ -215,8 +256,10 @@ def main() -> None:
 
     if args.cmd == "list":
         res = session.http_request(base_url)
-        list_tasks(res.read())
-
+        task_list = parse_task_list(res.read())
+        from pprint import pp
+        pp(task_list)
+        import pdb; pdb.set_trace()
 
 if __name__ == "__main__":
     main()

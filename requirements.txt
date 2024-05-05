@@ -1,2 +1,4 @@
+html2text==2024.2.26
 htmlement==2.0.0
 pytest==8.2.0
+requests==2.31.0
