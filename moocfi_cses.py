@@ -1,4 +1,5 @@
 # FIX: switch to using requests, uploading files with urllib.request is a pain!!!
+# TEST: see if we can work with cookies as dict instead of cookiejar
 # TODO: if config doesn't exist fail and ask to run config creation
 # TODO: make sure the correct directories exist
 # TODO: check validity of config after creation (can we log in?)
@@ -14,9 +15,11 @@ import http.cookiejar
 import http.client
 import urllib.request
 from pathlib import Path
+from typing import AnyStr
 
 import htmlement
 import requests
+from requests.models import Response
 
 
 class Session:
@@ -31,15 +34,12 @@ class Session:
         self.password = password
         self.base_url = base_url
         self.cookiejar = cookiejar if cookiejar else http.cookiejar.CookieJar()
-        self.session = self.get_session()
-
-    def get_session(self) -> requests.Session:
-        return requests.Session()
+        self.session = requests.Session()
 
     @property
     def is_logged_in(self) -> bool:
         res = self.http_request(self.base_url)
-        login_link = find_link(res.read(), './/a[@class="account"]')
+        login_link = find_link(res.content, './/a[@class="account"]')
         if self.username in login_link.get("text", ""):
             return True
 
@@ -55,16 +55,16 @@ class Session:
         if self.is_logged_in:
             return
 
-        res = self.session.open(self.base_url)
-        login_link = find_link(res.read(), './/a[@class="account"]')
+        res = self.session.get(self.base_url)
+        login_link = find_link(res.content, './/a[@class="account"]')
         if login_link:
             login_url = urllib.parse.urljoin(res.url, login_link.get("href"))
         else:
             raise ValueError("Failed to find login_url")
 
-        self.session.addheaders = [("referer", res.url)]
-        res = self.session.open(login_url)
-        login_form = parse_form(res.read(), ".//form")
+        self.session.headers.update({"referer": res.url})
+        res = self.session.get(login_url)
+        login_form = parse_form(res.content, ".//form")
         if login_form:
             action = login_form.get("_action")
             login_form.pop("_action")
@@ -74,8 +74,9 @@ class Session:
         login_form["session[login]"] = self.username
         login_form["session[password]"] = self.password
 
-        self.session.addheaders = [("referer", res.url)]
-        submit_form(self.session, urllib.parse.urljoin(res.url, action), login_form)
+        self.http_request(
+            url=urllib.parse.urljoin(res.url, action), referer=res.url, data=login_form
+        )
 
     # TODO: check if data is dict and encode it (probably not needed when switching to requests)
     def http_request(
@@ -83,10 +84,13 @@ class Session:
         url: str,
         referer: str = "",
         data: dict | bytes | None = None,
-    ) -> http.client.HTTPResponse:
+    ) -> Response:
         if referer:
-            self.session.addheaders = [("referer", referer)]
-        res = self.session.open(url, data)
+            self.session.headers.update({"referer": referer})
+        if data:
+            res = self.session.post(url, data)
+        else:
+            res = self.session.get(url)
 
         return res
 
@@ -95,7 +99,9 @@ def parse_args(args: list | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Interact with mooc.fi CSES instance")
     parser.add_argument("--username", help="tmc.mooc.fi username")
     parser.add_argument("--password", help="tmc.mooc.fi password")
-    parser.add_argument("--course", help="SLUG of the course (default: %(default)s)", default="dsa24k"),
+    parser.add_argument(
+        "--course", help="SLUG of the course (default: %(default)s)", default="dsa24k"
+    ),
     parser.add_argument(
         "--config",
         help="Location of config file (default: %(default)s)",
@@ -124,13 +130,18 @@ def create_config() -> dict[str, str]:
     return config
 
 
+# TODO: check if file exists and ask permission to overwrite
+# TODO: check if path exists, otherwise create
 def write_config(config_file: str, config: dict) -> None:
     print("Writing config to file")
     with open(config_file, "w") as f:
         json.dump(config, f)
 
 
+# TODO: check if path exists
+# TODO: try/except around open and json.load, return empty dict on failure
 def read_config(configfile: str) -> dict:
+    config = dict()
     file = Path(configfile).expanduser()
     with open(file, "r") as f:
         config = json.load(f)
@@ -139,6 +150,7 @@ def read_config(configfile: str) -> dict:
     return config
 
 
+# TODO: convert to using a dict
 def get_cookiejar(cookiefile: str) -> http.cookiejar.LWPCookieJar:
     cookiefile = str(Path(cookiefile).expanduser())
     cookiejar = http.cookiejar.LWPCookieJar(cookiefile)
@@ -151,7 +163,7 @@ def get_cookiejar(cookiefile: str) -> http.cookiejar.LWPCookieJar:
     return cookiejar
 
 
-def find_link(html: str, xpath: str) -> dict[str, str]:
+def find_link(html: AnyStr, xpath: str) -> dict[str, str]:
     """Search for html link by xpath and return dict with href and text"""
     anchor_element = htmlement.fromstring(html).find(xpath)
     link_data = dict()
@@ -162,7 +174,7 @@ def find_link(html: str, xpath: str) -> dict[str, str]:
     return link_data
 
 
-def parse_form(html: str, xpath: str = ".//form") -> dict[str, str]:
+def parse_form(html: AnyStr, xpath: str = ".//form") -> dict[str, str]:
     """Search for the first form in html and return dict with action and all other found inputs"""
     form_element = htmlement.fromstring(html).find(xpath)
     form_data = dict()
@@ -173,11 +185,13 @@ def parse_form(html: str, xpath: str = ".//form") -> dict[str, str]:
 
     return form_data
 
+
 @dataclass
 class Task:
     id: str
     name: str
     complete: bool
+
 
 # NOTE: I could simply use html2text to output the list of tasks
 # it needs some work to replace the <span task-score icon full with an actual icon
@@ -188,35 +202,38 @@ def parse_task_list(html: str | bytes) -> list[Task]:
     task_list = list()
     if content_element is not None:
         for item in content_element.findall('.//li[@class="task"]'):
-            id = name = span_class = ''
-            link_item = item.find('a')
+            id = name = span_class = ""
+            link_item = item.find("a")
             if link_item is not None:
-                name = link_item.text or ''
-                id = link_item.get('href', '').split('/')[-1]
+                name = link_item.text or ""
+                id = link_item.get("href", "").split("/")[-1]
             span_item = item.find('span[@class!="detail"]')
             if span_item is not None:
-                span_class = span_item.get('class', '')
+                span_class = span_item.get("class", "")
                 "i❌  ✅ X or ✔"
             if id and name and span_class:
                 task = Task(
-                        id=id,
-                        name=name,
-                        complete="full" in span_class,
+                    id=id,
+                    name=name,
+                    complete="full" in span_class,
                 )
                 task_list.append(task)
 
     return task_list
 
+
 # TODO: todo todo todo
 def submit_task(task_id: str, filename: str) -> None:
-    '''submit file to the submit form or task_id'''
+    """submit file to the submit form or task_id"""
     # NOTE: use parse_form and submit_form
     ...
+
 
 # TODO: todo todo todo
 def parse_task(html: str | bytes, task: Task) -> Task:
     task = Task("a", "b", True)
     return task
+
 
 # TODO: todo todo
 def list_tasks(html: str | bytes) -> None:
@@ -226,9 +243,9 @@ def list_tasks(html: str | bytes) -> None:
 
 
 # TODO: how to make this more functional?
-def submit_form(session: urllib.request.OpenerDirector, url: str, data: dict) -> None:
+def submit_form(session: requests.sessions.Session, url: str, data: dict) -> None:
     form_data = urllib.parse.urlencode(data).encode("ascii")
-    session.open(url, data=form_data)
+    session.post(url, data=form_data)
 
 
 def main() -> None:
@@ -256,10 +273,14 @@ def main() -> None:
 
     if args.cmd == "list":
         res = session.http_request(base_url)
-        task_list = parse_task_list(res.read())
+        task_list = parse_task_list(res.content)
         from pprint import pp
+
         pp(task_list)
-        import pdb; pdb.set_trace()
+        import pdb
+
+        pdb.set_trace()
+
 
 if __name__ == "__main__":
     main()
