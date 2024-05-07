@@ -1,5 +1,5 @@
-# FIX: switch to using requests, uploading files with urllib.request is a pain!!!
 # TEST: see if we can work with cookies as dict instead of cookiejar
+# TEST: is the `click` library a useful option?
 # TODO: if config doesn't exist fail and ask to run config creation
 # TODO: make sure the correct directories exist
 # TODO: check validity of config after creation (can we log in?)
@@ -7,13 +7,11 @@
 # TODO: UI for checking exercise description
 # TODO: UI for submitting solutions
 import argparse
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from getpass import getpass
 import json
 import urllib.parse
 import http.cookiejar
-import http.client
-import urllib.request
 from pathlib import Path
 from typing import AnyStr
 
@@ -22,54 +20,43 @@ import requests
 from requests.models import Response
 
 
+@dataclass
 class Session:
-    def __init__(
-        self,
-        username: str,
-        password: str,
-        base_url: str,
-        cookiejar: http.cookiejar.CookieJar | None = None,
-    ) -> None:
-        self.username = username
-        self.password = password
-        self.base_url = base_url
-        self.cookiejar = cookiejar if cookiejar else http.cookiejar.CookieJar()
-        self.session = requests.Session()
+    username: str
+    password: str
+    base_url: str
+    cookiejar: http.cookiejar.CookieJar = field(
+        default_factory=http.cookiejar.CookieJar
+    )
+
+    def __post_init__(self):
+        self.http_session = requests.Session()
 
     @property
     def is_logged_in(self) -> bool:
-        res = self.http_request(self.base_url)
-        login_link = find_link(res.content, './/a[@class="account"]')
-        if self.username in login_link.get("text", ""):
-            return True
+        html = self.http_request(self.base_url).text
+        login_link = find_link(html, './/a[@class="account"]')
+        return self.username in login_link.get("text", "")
 
-        return False
-
-    # NOTE: maybe split this up in multiple functions, this way they become easier to test by simply inject HTML
-    # - find_login_url (also useable as input for logged_in() -> bool checker
-    # - find_login_form or parse_form in login page
-    # - submit_login_form
     # TODO: add a debug flag/verbose flag and allow printing of html and forms
-    # TODO: see if we can suffice with passing the referer header to the open/http_request method instead of to the session
     def login(self) -> None:
         if self.is_logged_in:
             return
 
-        res = self.session.get(self.base_url)
-        login_link = find_link(res.content, './/a[@class="account"]')
+        res = self.http_request(self.base_url)
+        login_link = find_link(res.text, './/a[@class="account"]')
         if login_link:
             login_url = urllib.parse.urljoin(res.url, login_link.get("href"))
         else:
-            raise ValueError("Failed to find login_url")
+            raise ValueError("Failed to find login url")
 
-        self.session.headers.update({"referer": res.url})
-        res = self.session.get(login_url)
-        login_form = parse_form(res.content, ".//form")
+        res = self.http_request(login_url, referer=res.url)
+        login_form = parse_form(res.text, ".//form")
         if login_form:
             action = login_form.get("_action")
             login_form.pop("_action")
         else:
-            raise ValueError("Failed to find form")
+            raise ValueError("Failed to find login form")
 
         login_form["session[login]"] = self.username
         login_form["session[password]"] = self.password
@@ -77,36 +64,38 @@ class Session:
         self.http_request(
             url=urllib.parse.urljoin(res.url, action), referer=res.url, data=login_form
         )
+        if not self.is_logged_in:
+            raise ValueError("Login failed")
 
-    # TODO: check if data is dict and encode it (probably not needed when switching to requests)
     def http_request(
         self,
         url: str,
         referer: str = "",
-        data: dict | bytes | None = None,
+        data: dict | None = None,
     ) -> Response:
         if referer:
-            self.session.headers.update({"referer": referer})
+            self.http_session.headers.update({"referer": referer})
         if data:
-            res = self.session.post(url, data)
+            res = self.http_session.post(url, data)
         else:
-            res = self.session.get(url)
+            res = self.http_session.get(url)
 
         return res
 
 
+# TODO: replace with click
 def parse_args(args: list | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Interact with mooc.fi CSES instance")
     parser.add_argument("--username", help="tmc.mooc.fi username")
     parser.add_argument("--password", help="tmc.mooc.fi password")
     parser.add_argument(
         "--course", help="SLUG of the course (default: %(default)s)", default="dsa24k"
-    ),
+    ),  # pyright: ignore[reportUnusedExpression]
     parser.add_argument(
         "--config",
         help="Location of config file (default: %(default)s)",
         default="~/.config/moocfi_cses/config.json",
-    )
+    ),  # pyright: ignore[reportUnusedExpression]
     subparsers = parser.add_subparsers(required=True)
 
     parser_config = subparsers.add_parser("configure", help="configure moocfi_cses")
@@ -152,7 +141,6 @@ def read_config(configfile: str) -> dict:
 
 # TODO: convert to using a dict
 def get_cookiejar(cookiefile: str) -> http.cookiejar.LWPCookieJar:
-    cookiefile = str(Path(cookiefile).expanduser())
     cookiejar = http.cookiejar.LWPCookieJar(cookiefile)
     try:
         cookiejar.load(ignore_discard=True)
@@ -249,10 +237,10 @@ def submit_form(session: requests.sessions.Session, url: str, data: dict) -> Non
 
 
 def main() -> None:
+    # TODO: make state configurable, so people can choose not to store state
     state_dir = "~/.local/state/moocfi_cses"
 
     args = parse_args()
-    base_url = f"https://cses.fi/{args.course}/list/"
 
     if args.cmd == "configure":
         config = create_config()
@@ -261,7 +249,12 @@ def main() -> None:
 
     config = read_config(args.config)
 
+    # Merge args and config options in 1 dict
+    config.update((k, v) for k, v in vars(args).items() if v is not None)
+    print(config)
+    base_url = f"https://cses.fi/{config['course']}/list/"
     cookiejar = get_cookiejar(str(Path(state_dir + "/cookies.txt").expanduser()))
+
     session = Session(
         username=config["username"],
         password=config["password"],
@@ -273,13 +266,8 @@ def main() -> None:
 
     if args.cmd == "list":
         res = session.http_request(base_url)
-        task_list = parse_task_list(res.content)
-        from pprint import pp
-
-        pp(task_list)
-        import pdb
-
-        pdb.set_trace()
+        task_list = parse_task_list(res.text)
+        print(task_list[0])
 
 
 if __name__ == "__main__":
