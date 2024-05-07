@@ -30,9 +30,7 @@ class Session:
 
     def __post_init__(self):
         self.http_session = requests.Session()
-        self.http_session.cookies = (
-            self.cookiejar
-        )  # pyright: ignore[reportAttributeAccessIssue]
+        self.http_session.cookies = self.cookiejar  # pyright: ignore[reportAttributeAccessIssue]
 
     @property
     def is_logged_in(self) -> bool:
@@ -102,14 +100,20 @@ def parse_args(args: list | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Interact with mooc.fi CSES instance")
     parser.add_argument("--username", help="tmc.mooc.fi username")
     parser.add_argument("--password", help="tmc.mooc.fi password")
-    parser.add_argument(
-        "--course", help="SLUG of the course (default: %(default)s)", default="dsa24k"
-    ),  # pyright: ignore[reportUnusedExpression]
-    parser.add_argument(
-        "--config",
-        help="Location of config file (default: %(default)s)",
-        default="~/.config/moocfi_cses/config.json",
-    ),  # pyright: ignore[reportUnusedExpression]
+    (
+        parser.add_argument(
+            "--course",
+            help="SLUG of the course (default: %(default)s)",
+            default="dsa24k",
+        ),
+    )  # pyright: ignore[reportUnusedExpression]
+    (
+        parser.add_argument(
+            "--config",
+            help="Location of config file (default: %(default)s)",
+            default="~/.config/moocfi_cses/config.json",
+        ),
+    )  # pyright: ignore[reportUnusedExpression]
     subparsers = parser.add_subparsers(required=True)
 
     parser_config = subparsers.add_parser("configure", help="configure moocfi_cses")
@@ -228,6 +232,9 @@ def parse_task_list(html: str | bytes) -> list[Task]:
     return task_list
 
 
+TASK_DONE_ICON = {True: "✅", False: "❌"}
+
+
 # TODO: todo todo
 def print_task_list(html: str | bytes) -> None:
     "i❌  ✅ X or ✔"
@@ -278,11 +285,9 @@ def main() -> None:
 
     if args.cmd == "list":
         html = session.http_request(base_url)
-        task_list = parse_task_list(res.text)
-        print_task_list(html)
-        import pdb
-
-        pdb.set_trace()
+        task_list = parse_task_list(html)
+        for task in task_list:
+            print(f"- {task.id}: {task.name} {TASK_DONE_ICON[task.complete]}")
 
 
 if __name__ == "__main__":
