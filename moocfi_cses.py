@@ -17,7 +17,6 @@ from typing import AnyStr
 
 import htmlement
 import requests
-from requests.models import Response
 
 
 @dataclass
@@ -31,26 +30,38 @@ class Session:
 
     def __post_init__(self):
         self.http_session = requests.Session()
+        self.http_session.cookies = (
+            self.cookiejar
+        )  # pyright: ignore[reportAttributeAccessIssue]
 
     @property
     def is_logged_in(self) -> bool:
-        html = self.http_request(self.base_url).text
+        html = self.http_request(self.base_url)
         login_link = find_link(html, './/a[@class="account"]')
         return self.username in login_link.get("text", "")
 
     # TODO: add a debug flag/verbose flag and allow printing of html and forms
     def login(self) -> None:
+        """Logs into the site using webscraping
+
+        Steps:
+        - checks if already logged in
+        - retrieves base URL
+        - finds and retrieves login URL
+        - finds and submits login form
+        - checks if logged in
+        """
         if self.is_logged_in:
             return
 
-        res = self.http_request(self.base_url)
+        res = self.http_session.get(self.base_url)
         login_link = find_link(res.text, './/a[@class="account"]')
         if login_link:
             login_url = urllib.parse.urljoin(res.url, login_link.get("href"))
         else:
             raise ValueError("Failed to find login url")
 
-        res = self.http_request(login_url, referer=res.url)
+        res = self.http_session.get(login_url, headers={"referer": res.url})
         login_form = parse_form(res.text, ".//form")
         if login_form:
             action = login_form.get("_action")
@@ -61,9 +72,12 @@ class Session:
         login_form["session[login]"] = self.username
         login_form["session[password]"] = self.password
 
-        self.http_request(
-            url=urllib.parse.urljoin(res.url, action), referer=res.url, data=login_form
+        self.http_session.post(
+            url=urllib.parse.urljoin(res.url, action),
+            headers={"referer": res.url},
+            data=login_form,
         )
+
         if not self.is_logged_in:
             raise ValueError("Login failed")
 
@@ -71,8 +85,8 @@ class Session:
         self,
         url: str,
         referer: str = "",
-        data: dict | None = None,
-    ) -> Response:
+        data: dict[str, str] | None = None,
+    ) -> str:
         if referer:
             self.http_session.headers.update({"referer": referer})
         if data:
@@ -80,7 +94,7 @@ class Session:
         else:
             res = self.http_session.get(url)
 
-        return res
+        return res.text
 
 
 # TODO: replace with click
@@ -139,9 +153,9 @@ def read_config(configfile: str) -> dict:
     return config
 
 
-# TODO: convert to using a dict
-def get_cookiejar(cookiefile: str) -> http.cookiejar.LWPCookieJar:
-    cookiejar = http.cookiejar.LWPCookieJar(cookiefile)
+# TODO: convert to using a dict?
+def get_cookiejar(cookiefile: str) -> http.cookiejar.MozillaCookieJar:
+    cookiejar = http.cookiejar.MozillaCookieJar(cookiefile)
     try:
         cookiejar.load(ignore_discard=True)
     except FileNotFoundError:
@@ -190,30 +204,42 @@ def parse_task_list(html: str | bytes) -> list[Task]:
     task_list = list()
     if content_element is not None:
         for item in content_element.findall('.//li[@class="task"]'):
-            id = name = span_class = ""
-            link_item = item.find("a")
-            if link_item is not None:
-                name = link_item.text or ""
-                id = link_item.get("href", "").split("/")[-1]
-            span_item = item.find('span[@class!="detail"]')
-            if span_item is not None:
-                span_class = span_item.get("class", "")
-                "i❌  ✅ X or ✔"
-            if id and name and span_class:
+            item_id = None
+            item_name = None
+            item_class = None
+
+            item_link = item.find("a")
+            if item_link is not None:
+                item_name = item_link.text or ""
+                item_id = item_link.get("href", "").split("/")[-1]
+
+            item_span = item.find('span[@class!="detail"]')
+            if item_span is not None:
+                item_class = item_span.get("class", "")
+
+            if item_id and item_name and item_class:
                 task = Task(
-                    id=id,
-                    name=name,
-                    complete="full" in span_class,
+                    id=item_id,
+                    name=item_name,
+                    complete="full" in item_class,
                 )
                 task_list.append(task)
 
     return task_list
 
 
+# TODO: todo todo
+def print_task_list(html: str | bytes) -> None:
+    "i❌  ✅ X or ✔"
+    print("These are you tasks")
+    print("these are the args")
+    print(html)
+
+
 # TODO: todo todo todo
 def submit_task(task_id: str, filename: str) -> None:
     """submit file to the submit form or task_id"""
-    # NOTE: use parse_form and submit_form
+    # NOTE: use parse_form
     ...
 
 
@@ -223,21 +249,8 @@ def parse_task(html: str | bytes, task: Task) -> Task:
     return task
 
 
-# TODO: todo todo
-def list_tasks(html: str | bytes) -> None:
-    print("These are you tasks")
-    print("these are the args")
-    print(html)
-
-
-# TODO: how to make this more functional?
-def submit_form(session: requests.sessions.Session, url: str, data: dict) -> None:
-    form_data = urllib.parse.urlencode(data).encode("ascii")
-    session.post(url, data=form_data)
-
-
 def main() -> None:
-    # TODO: make state configurable, so people can choose not to store state
+    # TODO: make state optional, so people can choose not to store state
     state_dir = "~/.local/state/moocfi_cses"
 
     args = parse_args()
@@ -249,9 +262,8 @@ def main() -> None:
 
     config = read_config(args.config)
 
-    # Merge args and config options in 1 dict
+    # Merge cli args and configfile parameters in 1 dict
     config.update((k, v) for k, v in vars(args).items() if v is not None)
-    print(config)
     base_url = f"https://cses.fi/{config['course']}/list/"
     cookiejar = get_cookiejar(str(Path(state_dir + "/cookies.txt").expanduser()))
 
@@ -265,9 +277,12 @@ def main() -> None:
     cookiejar.save(ignore_discard=True)
 
     if args.cmd == "list":
-        res = session.http_request(base_url)
+        html = session.http_request(base_url)
         task_list = parse_task_list(res.text)
-        print(task_list[0])
+        print_task_list(html)
+        import pdb
+
+        pdb.set_trace()
 
 
 if __name__ == "__main__":
