@@ -35,5 +35,9 @@ jobs:
         ruff check --output-format=github .
     - name: Test with pytest-cov
       run: |
-        pip install pytest-cov
+        pip install pytest-cov | tee pytest.log
         pytest --cov
+    - name: Test file output
+      run: |
+        echo "Hello there:"
+        cat pytest.log
