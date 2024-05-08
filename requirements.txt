@@ -3,3 +3,4 @@ htmlement==2.0.0
 pytest==8.2.0
 pytest-cov==5.0.0
 requests==2.31.0
+requests-mock==1.12.1
