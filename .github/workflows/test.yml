@@ -46,4 +46,4 @@ jobs:
       uses: thollander/actions-comment-pull-request@v2
       with:
         filePath: pytest.log
-      if: github.event_name != 'pull_request'
+      if: github.event_name == 'pull_request'
