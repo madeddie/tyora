@@ -60,7 +60,7 @@ def test_login_successful(mock_session):
     with requests_mock.Mocker() as m:
         m.get("https://example.com", text='<a class="account" href="/user/1234">test_user@test.com (mooc.fi)</a>')
         mock_session.login()
-        assert mock_session.is_logged_in == True
+        assert mock_session.is_logged_in
 
 def test_login_failed(mock_session):
     # Mocking the HTTP response for failed login
