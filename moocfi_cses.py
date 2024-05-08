@@ -1,4 +1,3 @@
-# TEST: see if we can work with cookies as dict instead of cookiejar
 # TEST: is the `click` library a useful option?
 # TODO: if config doesn't exist fail and ask to run config creation
 # TODO: make sure the correct directories exist
@@ -11,7 +10,6 @@ from dataclasses import dataclass, field
 from getpass import getpass
 import json
 import urllib.parse
-import http.cookiejar
 from pathlib import Path
 from typing import AnyStr
 
@@ -24,15 +22,12 @@ class Session:
     username: str
     password: str
     base_url: str
-    cookiejar: http.cookiejar.CookieJar = field(
-        default_factory=http.cookiejar.CookieJar
-    )
+    cookies: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self):
         self.http_session = requests.Session()
-        self.http_session.cookies = (
-            self.cookiejar
-        )  # pyright: ignore[reportAttributeAccessIssue]
+        self.cookiejar = requests.utils.cookiejar_from_dict(self.cookies)  # type: ignore[no-untyped-call]
+        self.http_session.cookies = self.cookiejar
 
     @property
     def is_logged_in(self) -> bool:
@@ -116,6 +111,11 @@ def parse_args(args: list | None = None) -> argparse.Namespace:
             default="~/.config/moocfi_cses/config.json",
         ),
     )  # pyright: ignore[reportUnusedExpression]
+    parser.add_argument(
+        "--state",
+        action="store_false",
+        help="Store cookies for faster access in the future",
+    )
     subparsers = parser.add_subparsers(required=True)
 
     parser_config = subparsers.add_parser("configure", help="configure moocfi_cses")
@@ -159,16 +159,20 @@ def read_config(configfile: str) -> dict:
     return config
 
 
-# TODO: convert to using a dict?
-def get_cookiejar(cookiefile: str) -> http.cookiejar.MozillaCookieJar:
-    cookiejar = http.cookiejar.MozillaCookieJar(cookiefile)
+def read_cookie_file(cookiefile: str) -> dict[str, str]:
+    cookies = dict()
     try:
-        cookiejar.load(ignore_discard=True)
-    except FileNotFoundError:
-        # TODO: handle exception?
+        with open(cookiefile, "r") as f:
+            cookies = json.load(f)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
         pass
 
-    return cookiejar
+    return cookies
+
+
+def write_cookie_file(cookiefile: str, cookies: dict[str, str]) -> None:
+    with open(cookiefile, "w") as f:
+        json.dump(cookies, f)
 
 
 def find_link(html: AnyStr, xpath: str) -> dict[str, str]:
@@ -259,9 +263,6 @@ def parse_task(html: str | bytes, task: Task) -> Task:
 
 
 def main() -> None:
-    # TODO: make state optional, so people can choose not to store state
-    state_dir = "~/.local/state/moocfi_cses"
-
     args = parse_args()
 
     if args.cmd == "configure":
@@ -271,19 +272,31 @@ def main() -> None:
 
     config = read_config(args.config)
 
-    # Merge cli args and configfile parameters in 1 dict
+    # Merge cli args and configfile parameters in one dict
     config.update((k, v) for k, v in vars(args).items() if v is not None)
+
     base_url = f"https://cses.fi/{config['course']}/list/"
-    cookiejar = get_cookiejar(str(Path(state_dir + "/cookies.txt").expanduser()))
+
+    cookiefile = None
+    cookies = dict()
+    if args.state:
+        state_dir = Path("~/.local/state/moocfi_cses").expanduser()
+        if not state_dir.exists():
+            state_dir.mkdir(parents=True)
+        cookiefile = state_dir / "cookies.txt"
+        cookies = read_cookie_file(str(cookiefile))
 
     session = Session(
         username=config["username"],
         password=config["password"],
         base_url=base_url,
-        cookiejar=cookiejar,
+        cookies=cookies,
     )
     session.login()
-    cookiejar.save(ignore_discard=True)
+
+    if args.state and cookiefile:
+        cookies = requests.utils.dict_from_cookiejar(session.cookiejar)  # type: ignore[no-untyped-call]
+        write_cookie_file(str(cookiefile), cookies)
 
     if args.cmd == "list":
         html = session.http_request(base_url)
