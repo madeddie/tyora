@@ -39,7 +39,9 @@ jobs:
     - name: Test with pytest-cov
       run: |
         pip install pytest-cov
-        pytest --cov | tee pytest.log
+        echo '```' > pytest.log
+        pytest --cov | tee -a pytest.log
+        echo '```' >> pytest.log
     - name: PR comment pytest output
       uses: thollander/actions-comment-pull-request@v2
       with:
