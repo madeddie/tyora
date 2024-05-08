@@ -18,6 +18,9 @@ jobs:
     name: Test and lint the application
     runs-on: ubuntu-latest
 
+    permissions:
+      pull-requests: write
+
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python 3.10
