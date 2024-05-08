@@ -112,9 +112,9 @@ def parse_args(args: list | None = None) -> argparse.Namespace:
         ),
     )  # pyright: ignore[reportUnusedExpression]
     parser.add_argument(
-        "--state",
-        action="store_false",
-        help="Store cookies for faster access in the future",
+        "--no-state",
+        action="store_true",
+        help="Don't store cookies or cache (used for faster access on the future runs)",
     )
     subparsers = parser.add_subparsers(required=True)
 
@@ -279,7 +279,8 @@ def main() -> None:
 
     cookiefile = None
     cookies = dict()
-    if args.state:
+    print(args)
+    if not args.no_state:
         state_dir = Path("~/.local/state/moocfi_cses").expanduser()
         if not state_dir.exists():
             state_dir.mkdir(parents=True)
@@ -294,7 +295,7 @@ def main() -> None:
     )
     session.login()
 
-    if args.state and cookiefile:
+    if not args.no_state and cookiefile:
         cookies = requests.utils.dict_from_cookiejar(session.cookiejar)  # type: ignore[no-untyped-call]
         write_cookie_file(str(cookiefile), cookies)
 
