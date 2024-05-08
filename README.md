@@ -49,7 +49,7 @@ This script interacts with the mooc.fi instance of the CSES (Competitive Program
 3. Submit a solution:
 
    ```bash
-   python script.py submit <exercise_id> <path_to_solution_file>
+   python moocfi_cses.py submit <exercise_id> <path_to_solution_file>
    ```
 
    Replace `<exercise_id>` with the ID of the exercise you want to submit a solution for, and `<path_to_solution_file>` with the path to your solution file.
