@@ -30,7 +30,9 @@ class Session:
 
     def __post_init__(self):
         self.http_session = requests.Session()
-        self.http_session.cookies = self.cookiejar  # pyright: ignore[reportAttributeAccessIssue]
+        self.http_session.cookies = (
+            self.cookiejar
+        )  # pyright: ignore[reportAttributeAccessIssue]
 
     @property
     def is_logged_in(self) -> bool:

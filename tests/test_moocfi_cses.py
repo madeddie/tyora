@@ -53,32 +53,49 @@ class TestParseForm:
 # TODO: add tests for unreachable and failing endpoints, 4xx, 5xx, etc
 @pytest.fixture
 def mock_session():
-    return moocfi_cses.Session(username="test_user@test.com", password="test_password", base_url="https://example.com")
+    return moocfi_cses.Session(
+        username="test_user@test.com",
+        password="test_password",
+        base_url="https://example.com",
+    )
+
 
 def test_login_successful(mock_session):
     # Mocking the HTTP response for successful login
     with requests_mock.Mocker() as m:
-        m.get("https://example.com", text='<a class="account" href="/user/1234">test_user@test.com (mooc.fi)</a>')
+        m.get(
+            "https://example.com",
+            text='<a class="account" href="/user/1234">test_user@test.com (mooc.fi)</a>',
+        )
         mock_session.login()
         assert mock_session.is_logged_in
+
 
 def test_login_failed(mock_session):
     # Mocking the HTTP response for failed login
     with requests_mock.Mocker() as m:
-        m.get("https://example.com", text='<a class="account" href="/login/oauth-redirect?site=mooc.fi">Login using mooc.fi</a>')
+        m.get(
+            "https://example.com",
+            text='<a class="account" href="/login/oauth-redirect?site=mooc.fi">Login using mooc.fi</a>',
+        )
         m.get("https://example.com/account", text="Login required")
         m.get("https://example.com/login/oauth-redirect?site=mooc.fi", text="")
         with pytest.raises(ValueError):
             mock_session.login()
 
+
 # TODO: functions that use user input or read or write files
-def test_create_config(): ...
+def test_create_config():
+    ...
 
 
-def test_write_config(): ...
+def test_write_config():
+    ...
 
 
-def test_read_config(): ...
+def test_read_config():
+    ...
 
 
-def test_get_cookiejar(): ...
+def test_get_cookiejar():
+    ...
