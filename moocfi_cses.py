@@ -8,6 +8,7 @@
 import argparse
 from dataclasses import dataclass, field
 from getpass import getpass
+import logging
 import json
 import urllib.parse
 from pathlib import Path
@@ -16,6 +17,12 @@ from typing import AnyStr
 import htmlement
 import requests
 
+
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 @dataclass
 class Session:
@@ -160,17 +167,31 @@ def read_config(configfile: str) -> dict:
 
 
 def read_cookie_file(cookiefile: str) -> dict[str, str]:
-    cookies = dict()
+    """
+    Reads cookies from a JSON formatted file.
+
+    Args:
+        cookiefile: str path to the file containing cookies.
+
+    Returns:
+        A dictionary of cookies.
+    """
     try:
         with open(cookiefile, "r") as f:
-            cookies = json.load(f)
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        pass
-
-    return cookies
+            return json.load(f)
+    except (FileNotFoundError, json.decoder.JSONDecodeError) as e:
+        logging.debug(f"Error reading cookies from {cookiefile}: {e}")
+    return {}
 
 
 def write_cookie_file(cookiefile: str, cookies: dict[str, str]) -> None:
+    """
+    Writes cookies to a file in JSON format.
+
+    Args:
+        cookiefile: Path to the file for storing cookies.
+        cookies: A dictionary of cookies to write.
+    """
     with open(cookiefile, "w") as f:
         json.dump(cookies, f)
 
@@ -194,6 +215,7 @@ def parse_form(html: AnyStr, xpath: str = ".//form") -> dict[str, str]:
         form_data["_action"] = form_element.get("action")
         for form_input in form_element.iter("input"):
             form_data[form_input.get("name")] = form_input.get("value", "")
+            form_data[form_key] = form_value
 
     return form_data
 
