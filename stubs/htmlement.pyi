@@ -1,4 +1,3 @@
-from _typeshed import Incomplete
 from html.parser import HTMLParser
 import io
 from typing import Optional
