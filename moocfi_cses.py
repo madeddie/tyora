@@ -62,6 +62,7 @@ class Session:
         if login_link:
             login_url = urllib.parse.urljoin(res.url, login_link.get("href"))
         else:
+            logging.debug(f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}")
             raise ValueError("Failed to find login url")
 
         res = self.http_session.get(login_url, headers={"referer": res.url})
@@ -70,6 +71,7 @@ class Session:
             action = login_form.get("_action")
             login_form.pop("_action")
         else:
+            logging.debug(f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}")
             raise ValueError("Failed to find login form")
 
         login_form["session[login]"] = self.username
@@ -82,6 +84,7 @@ class Session:
         )
 
         if not self.is_logged_in:
+            logging.debug(f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}")
             raise ValueError("Login failed")
 
     def http_request(
