@@ -1,4 +1,6 @@
 # mooc.fi CSES exercise task cli
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/madeddie/moocfi_cses/test.yml)
+
 
 This script interacts with the mooc.fi instance of the CSES (Competitive Programmer's Handbook) website to perform various actions such as logging in, retrieving exercise lists, and submitting solutions. It provides a convenient way to view and submit tasks.
 
