@@ -12,7 +12,7 @@ import logging
 import json
 import urllib.parse
 from pathlib import Path
-from typing import AnyStr
+from typing import AnyStr, Optional
 
 import htmlement
 import requests
@@ -24,6 +24,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+
 @dataclass
 class Session:
     username: str
@@ -31,7 +32,7 @@ class Session:
     base_url: str
     cookies: dict[str, str] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.http_session = requests.Session()
         self.cookiejar = requests.utils.cookiejar_from_dict(self.cookies)  # type: ignore[no-untyped-call]
         self.http_session.cookies = self.cookiejar
@@ -40,7 +41,8 @@ class Session:
     def is_logged_in(self) -> bool:
         html = self.http_request(self.base_url)
         login_link = find_link(html, './/a[@class="account"]')
-        return self.username in login_link.get("text", "")
+        login_text = login_link.get("text") or ""
+        return self.username in login_text
 
     # TODO: add a debug flag/verbose flag and allow printing of html and forms
     def login(self) -> None:
@@ -87,7 +89,7 @@ class Session:
         self,
         url: str,
         referer: str = "",
-        data: dict[str, str] | None = None,
+        data: Optional[dict[str, str]] = None,
     ) -> str:
         if referer:
             self.http_session.headers.update({"referer": referer})
@@ -100,7 +102,7 @@ class Session:
 
 
 # TODO: replace with click
-def parse_args(args: list | None = None) -> argparse.Namespace:
+def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Interact with mooc.fi CSES instance")
     parser.add_argument("--username", help="tmc.mooc.fi username")
     parser.add_argument("--password", help="tmc.mooc.fi password")
@@ -148,7 +150,7 @@ def create_config() -> dict[str, str]:
 
 # TODO: check if file exists and ask permission to overwrite
 # TODO: check if path exists, otherwise create
-def write_config(config_file: str, config: dict) -> None:
+def write_config(config_file: str, config: dict[str, str]) -> None:
     print("Writing config to file")
     with open(config_file, "w") as f:
         json.dump(config, f)
@@ -156,7 +158,7 @@ def write_config(config_file: str, config: dict) -> None:
 
 # TODO: check if path exists
 # TODO: try/except around open and json.load, return empty dict on failure
-def read_config(configfile: str) -> dict:
+def read_config(configfile: str) -> dict[str, str]:
     config = dict()
     file = Path(configfile).expanduser()
     with open(file, "r") as f:
@@ -196,7 +198,7 @@ def write_cookie_file(cookiefile: str, cookies: dict[str, str]) -> None:
         json.dump(cookies, f)
 
 
-def find_link(html: AnyStr, xpath: str) -> dict[str, str]:
+def find_link(html: AnyStr, xpath: str) -> dict[str, str | None]:
     """Search for html link by xpath and return dict with href and text"""
     anchor_element = htmlement.fromstring(html).find(xpath)
     link_data = dict()
@@ -207,14 +209,15 @@ def find_link(html: AnyStr, xpath: str) -> dict[str, str]:
     return link_data
 
 
-def parse_form(html: AnyStr, xpath: str = ".//form") -> dict[str, str]:
+def parse_form(html: AnyStr, xpath: str = ".//form") -> dict[str, str | None]:
     """Search for the first form in html and return dict with action and all other found inputs"""
     form_element = htmlement.fromstring(html).find(xpath)
     form_data = dict()
     if form_element is not None:
         form_data["_action"] = form_element.get("action")
         for form_input in form_element.iter("input"):
-            form_data[form_input.get("name")] = form_input.get("value", "")
+            form_key = form_input.get("name") or ""
+            form_value = form_input.get("value") or ""
             form_data[form_key] = form_value
 
     return form_data
