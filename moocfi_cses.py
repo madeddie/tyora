@@ -34,8 +34,7 @@ class Session:
 
     def __post_init__(self) -> None:
         self.http_session = requests.Session()
-        self.cookiejar = requests.utils.cookiejar_from_dict(self.cookies)  # type: ignore[no-untyped-call]
-        self.http_session.cookies = self.cookiejar
+        self.http_session.cookies = requests.utils.cookiejar_from_dict(self.cookies)  # type: ignore[no-untyped-call]
 
     @property
     def is_logged_in(self) -> bool:
