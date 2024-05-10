@@ -18,11 +18,7 @@ import htmlement
 import requests
 
 
-logging.basicConfig(
-    level=logging.WARNING,
-    format="%(asctime)s %(levelname)s %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+logger = logging.getLogger(name="moocfi_cses")
 
 
 @dataclass
@@ -297,6 +293,12 @@ def parse_task(html: str | bytes, task: Task) -> Task:
 
 def main() -> None:
     args = parse_args()
+
+    logging.basicConfig(
+        level=logging.WARNING,
+        format="%(asctime)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     if args.cmd == "configure":
         config = create_config()
