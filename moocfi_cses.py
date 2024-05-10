@@ -18,11 +18,7 @@ import htmlement
 import requests
 
 
-logging.basicConfig(
-    level=logging.WARNING,
-    format="%(asctime)s %(levelname)s %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+logger = logging.getLogger(name="moocfi_cses")
 
 
 @dataclass
@@ -62,7 +58,9 @@ class Session:
         if login_link:
             login_url = urllib.parse.urljoin(res.url, login_link.get("href"))
         else:
-            logging.debug(f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}")
+            logging.debug(
+                f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}"
+            )
             raise ValueError("Failed to find login url")
 
         res = self.http_session.get(login_url, headers={"referer": res.url})
@@ -71,7 +69,9 @@ class Session:
             action = login_form.get("_action")
             login_form.pop("_action")
         else:
-            logging.debug(f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}")
+            logging.debug(
+                f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}"
+            )
             raise ValueError("Failed to find login form")
 
         login_form["session[login]"] = self.username
@@ -84,7 +84,9 @@ class Session:
         )
 
         if not self.is_logged_in:
-            logging.debug(f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}")
+            logging.debug(
+                f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}"
+            )
             raise ValueError("Login failed")
 
     def http_request(
@@ -292,6 +294,12 @@ def parse_task(html: str | bytes, task: Task) -> Task:
 def main() -> None:
     args = parse_args()
 
+    logging.basicConfig(
+        level=logging.WARNING,
+        format="%(asctime)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
     if args.cmd == "configure":
         config = create_config()
         write_config(args.config, config)
@@ -323,7 +331,7 @@ def main() -> None:
     session.login()
 
     if not args.no_state and cookiefile:
-        cookies = requests.utils.dict_from_cookiejar(session.cookiejar)  # type: ignore[no-untyped-call]
+        cookies = requests.utils.dict_from_cookiejar(session.http_session.cookies)
         write_cookie_file(str(cookiefile), cookies)
 
     if args.cmd == "list":
