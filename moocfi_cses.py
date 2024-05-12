@@ -1,4 +1,3 @@
-# TEST: is the `click` library a useful option?
 # TODO: if config doesn't exist fail and ask to run config creation
 # TODO: make sure the correct directories exist
 # TODO: check validity of config after creation (can we log in?)
@@ -39,7 +38,7 @@ class Session:
         login_text = login_link.get("text") or ""
         return self.username in login_text
 
-    # TODO: add a debug flag/verbose flag and allow printing of html and forms
+    # TODO: create custom exceptions
     def login(self) -> None:
         """Logs into the site using webscraping
 
@@ -110,32 +109,37 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Interact with mooc.fi CSES instance")
     parser.add_argument("--username", help="tmc.mooc.fi username")
     parser.add_argument("--password", help="tmc.mooc.fi password")
-    (
-        parser.add_argument(
-            "--course",
-            help="SLUG of the course (default: %(default)s)",
-            default="dsa24k",
-        ),
-    )  # pyright: ignore[reportUnusedExpression]
-    (
-        parser.add_argument(
-            "--config",
-            help="Location of config file (default: %(default)s)",
-            default="~/.config/moocfi_cses/config.json",
-        ),
-    )  # pyright: ignore[reportUnusedExpression]
+    parser.add_argument(
+        "--debug", help="set logging level to debug", action="store_true"
+    )
+    parser.add_argument(
+        "--course",
+        help="SLUG of the course (default: %(default)s)",
+        default="dsa24k",
+    )
+    parser.add_argument(
+        "--config",
+        help="Location of config file (default: %(default)s)",
+        default="~/.config/moocfi_cses/config.json",
+    )
     parser.add_argument(
         "--no-state",
+        help="Don't store cookies or cache (they're used for faster access on the future runs)",
         action="store_true",
-        help="Don't store cookies or cache (used for faster access on the future runs)",
     )
     subparsers = parser.add_subparsers(required=True)
 
-    parser_config = subparsers.add_parser("configure", help="configure moocfi_cses")
+    parser_config = subparsers.add_parser("configure", help="Configure moocfi_cses")
     parser_config.set_defaults(cmd="configure")
 
-    parser_list = subparsers.add_parser("list", help="list exercises")
+    parser_list = subparsers.add_parser("list", help="List exercises")
     parser_list.set_defaults(cmd="list")
+    parser_list.add_argument(
+        "--filter",
+        help="List complete, incomplete or all tasks (default: %(default)s)",
+        choices=["complete", "incomplete", "all"],
+        default="all",
+    )
 
     return parser.parse_args(args)
 
@@ -154,9 +158,10 @@ def create_config() -> dict[str, str]:
 
 # TODO: check if file exists and ask permission to overwrite
 # TODO: check if path exists, otherwise create
-def write_config(config_file: str, config: dict[str, str]) -> None:
+def write_config(configfile: str, config: dict[str, str]) -> None:
+    file = Path(configfile).expanduser()
     print("Writing config to file")
-    with open(config_file, "w") as f:
+    with open(file, "w") as f:
         json.dump(config, f)
 
 
@@ -231,7 +236,7 @@ def parse_form(html: AnyStr, xpath: str = ".//form") -> dict[str, str | None]:
 class Task:
     id: str
     name: str
-    complete: bool
+    state: str
 
 
 # NOTE: I could simply use html2text to output the list of tasks
@@ -260,14 +265,14 @@ def parse_task_list(html: str | bytes) -> list[Task]:
                 task = Task(
                     id=item_id,
                     name=item_name,
-                    complete="full" in item_class,
+                    state="complete" if "full" in item_class else "incomplete",
                 )
                 task_list.append(task)
 
     return task_list
 
 
-TASK_DONE_ICON = {True: "✅", False: "❌"}
+TASK_DONE_ICON = {"complete": "✅", "incomplete": "❌"}
 
 
 # TODO: todo todo
@@ -287,7 +292,7 @@ def submit_task(task_id: str, filename: str) -> None:
 
 # TODO: todo todo todo
 def parse_task(html: str | bytes, task: Task) -> Task:
-    task = Task("a", "b", True)
+    task = Task("a", "b", "complete")
     return task
 
 
@@ -295,7 +300,7 @@ def main() -> None:
     args = parse_args()
 
     logging.basicConfig(
-        level=logging.WARNING,
+        level=logging.DEBUG if args.debug else logging.WARNING,
         format="%(asctime)s %(levelname)s %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
@@ -314,7 +319,6 @@ def main() -> None:
 
     cookiefile = None
     cookies = dict()
-    print(args)
     if not args.no_state:
         state_dir = Path("~/.local/state/moocfi_cses").expanduser()
         if not state_dir.exists():
@@ -338,7 +342,8 @@ def main() -> None:
         html = session.http_request(base_url)
         task_list = parse_task_list(html)
         for task in task_list:
-            print(f"- {task.id}: {task.name} {TASK_DONE_ICON[task.complete]}")
+            if args.filter == "all" or args.filter == task.state:
+                print(f"- {task.id}: {task.name} {TASK_DONE_ICON[task.state]}")
 
 
 if __name__ == "__main__":
