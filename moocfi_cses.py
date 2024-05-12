@@ -138,8 +138,7 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     parser_list.add_argument(
         "--filter",
         help="List complete, incomplete or all tasks (default: %(default)s)",
-        choices=["complete", "incomplete", "all"],
-        default="all",
+        choices=["complete", "incomplete"],
     )
 
     return parser.parse_args(args)
@@ -158,11 +157,15 @@ def create_config() -> dict[str, str]:
 
 
 # TODO: check if file exists and ask permission to overwrite
-# TODO: check if path exists, otherwise create
 def write_config(configfile: str, config: dict[str, str]) -> None:
-    file = Path(configfile).expanduser()
+    file_path = Path(configfile).expanduser()
+    if file_path.exists():
+        # TODO: check if file exists and ask permission to overwrite
+        # Prompt user or handle file overwrite scenario
+        ...
+    file_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
     print("Writing config to file")
-    with open(file, "w") as f:
+    with open(file_path, "w") as f:
         json.dump(config, f)
 
 
@@ -170,8 +173,8 @@ def write_config(configfile: str, config: dict[str, str]) -> None:
 # TODO: try/except around open and json.load, return empty dict on failure
 def read_config(configfile: str) -> dict[str, str]:
     config = dict()
-    file = Path(configfile).expanduser()
-    with open(file, "r") as f:
+    file_path = Path(configfile).expanduser()
+    with open(file_path, "r") as f:
         config = json.load(f)
         for setting in ("username", "password"):
             assert setting in config
@@ -234,11 +237,11 @@ def parse_form(html: AnyStr, xpath: str = ".//form") -> dict[str, str | None]:
 
 
 class TaskState(Enum):
-    COMPLETE = auto()
-    INCOMPLETE = auto()
+    COMPLETE = "complete"
+    INCOMPLETE = "incompletE"
 
 
-TASK_DONE_ICON = {
+TASK_STATE_ICON = {
     TaskState.COMPLETE: "✅",
     TaskState.INCOMPLETE: "❌",
 }
@@ -251,9 +254,7 @@ class Task:
     state: TaskState
 
 
-# NOTE: I could simply use html2text to output the list of tasks
-# it needs some work to replace the <span task-score icon full with an actual icon
-# and do we want people to choose the task by name or by ID (or both?)
+# TODO: this should be part of a client class or module
 def parse_task_list(html: str | bytes) -> list[Task]:
     """Parse html to find tasks and their status, return something useful, possibly a specific data class"""
     content_element = htmlement.fromstring(html).find('.//div[@class="content"]')
@@ -286,22 +287,21 @@ def parse_task_list(html: str | bytes) -> list[Task]:
     return task_list
 
 
-# TODO: todo todo
-def print_task_list(html: str | bytes) -> None:
-    "i❌  ✅ X or ✔"
-    print("These are you tasks")
-    print("these are the args")
-    print(html)
+# TODO: This should be part of a UI class or module
+def print_task_list(task_list: list[Task], filter: Optional[str] = None) -> None:
+    for task in task_list:
+        if not filter or filter == task.state.value:
+            print(f"- {task.id}: {task.name} {TASK_STATE_ICON[task.state]}")
 
 
-# TODO: todo todo todo
+# TODO: Implement function that posts the submit form with the correct file
 def submit_task(task_id: str, filename: str) -> None:
     """submit file to the submit form or task_id"""
     # NOTE: use parse_form
     ...
 
 
-# TODO: todo todo todo
+# TODO: Implement function that parser the specific task page into Task object
 def parse_task(html: str | bytes, task: Task) -> Task:
     task = Task("a", "b", TaskState.COMPLETE)
     return task
@@ -333,7 +333,7 @@ def main() -> None:
     if not args.no_state:
         state_dir = Path("~/.local/state/moocfi_cses").expanduser()
         if not state_dir.exists():
-            state_dir.mkdir(parents=True)
+            state_dir.mkdir(parents=True, exist_ok=True)
         cookiefile = state_dir / "cookies.txt"
         cookies = read_cookie_file(str(cookiefile))
 
@@ -352,9 +352,7 @@ def main() -> None:
     if args.cmd == "list":
         html = session.http_request(base_url)
         task_list = parse_task_list(html)
-        for task in task_list:
-            if args.filter == "all" or args.filter == task.state.name.lower():
-                print(f"- {task.id}: {task.name} {TASK_DONE_ICON[task.state]}")
+        print_task_list(task_list, filter=args.filter)
 
 
 if __name__ == "__main__":
