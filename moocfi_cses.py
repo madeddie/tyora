@@ -6,7 +6,7 @@
 # TODO: UI for submitting solutions
 import argparse
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import Enum
 from getpass import getpass
 import logging
 import json
