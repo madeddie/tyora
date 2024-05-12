@@ -6,6 +6,7 @@
 # TODO: UI for submitting solutions
 import argparse
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from getpass import getpass
 import logging
 import json
@@ -232,11 +233,22 @@ def parse_form(html: AnyStr, xpath: str = ".//form") -> dict[str, str | None]:
     return form_data
 
 
+class TaskState(Enum):
+    COMPLETE = auto()
+    INCOMPLETE = auto()
+
+
+TASK_DONE_ICON = {
+    TaskState.COMPLETE: "✅",
+    TaskState.INCOMPLETE: "❌",
+}
+
+
 @dataclass
 class Task:
     id: str
     name: str
-    state: str
+    state: TaskState
 
 
 # NOTE: I could simply use html2text to output the list of tasks
@@ -265,14 +277,13 @@ def parse_task_list(html: str | bytes) -> list[Task]:
                 task = Task(
                     id=item_id,
                     name=item_name,
-                    state="complete" if "full" in item_class else "incomplete",
+                    state=TaskState.COMPLETE
+                    if "full" in item_class
+                    else TaskState.INCOMPLETE,
                 )
                 task_list.append(task)
 
     return task_list
-
-
-TASK_DONE_ICON = {"complete": "✅", "incomplete": "❌"}
 
 
 # TODO: todo todo
@@ -292,7 +303,7 @@ def submit_task(task_id: str, filename: str) -> None:
 
 # TODO: todo todo todo
 def parse_task(html: str | bytes, task: Task) -> Task:
-    task = Task("a", "b", "complete")
+    task = Task("a", "b", TaskState.COMPLETE)
     return task
 
 
@@ -342,7 +353,7 @@ def main() -> None:
         html = session.http_request(base_url)
         task_list = parse_task_list(html)
         for task in task_list:
-            if args.filter == "all" or args.filter == task.state:
+            if args.filter == "all" or args.filter == task.state.name.lower():
                 print(f"- {task.id}: {task.name} {TASK_DONE_ICON[task.state]}")
 
 
