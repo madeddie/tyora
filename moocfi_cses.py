@@ -238,7 +238,7 @@ def parse_form(html: AnyStr, xpath: str = ".//form") -> dict[str, str | None]:
 
 class TaskState(Enum):
     COMPLETE = "complete"
-    INCOMPLETE = "incompletE"
+    INCOMPLETE = "incomplete"
 
 
 TASK_STATE_ICON = {
