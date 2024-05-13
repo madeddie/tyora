@@ -1,9 +1,3 @@
-# TODO: if config doesn't exist fail and ask to run config creation
-# TODO: make sure the correct directories exist
-# TODO: check validity of config after creation (can we log in?)
-# TODO: add exercise list parse, list of exercises, name, status, possible: week and deadline
-# TODO: UI for checking exercise description
-# TODO: UI for submitting solutions
 import argparse
 from dataclasses import dataclass, field
 from enum import Enum
@@ -41,7 +35,6 @@ class Session:
         login_text = login_link.get("text") or ""
         return self.username in login_text
 
-    # TODO: create custom exceptions
     def login(self) -> None:
         """Logs into the site using webscraping
 
@@ -107,7 +100,6 @@ class Session:
         return res.text
 
 
-# TODO: replace with click
 def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Interact with mooc.fi CSES instance")
     parser.add_argument("--username", help="tmc.mooc.fi username")
@@ -157,7 +149,6 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
 
 
 def create_config() -> dict[str, str]:
-    # TODO: try to read an existing config file and give the values as default values
     username = input("Your tmc.mooc.fi username: ")
     password = getpass("Your tmc.mooc.fi password: ")
     config = {
@@ -168,12 +159,10 @@ def create_config() -> dict[str, str]:
     return config
 
 
-# TODO: check if file exists and ask permission to overwrite
 def write_config(configfile: str, config: dict[str, str]) -> None:
     file_path = Path(configfile).expanduser()
     if file_path.exists():
-        # TODO: check if file exists and ask permission to overwrite
-        # Prompt user or handle file overwrite scenario
+        # TODO: https://github.com/madeddie/moocfi_cses/issues/28
         ...
     file_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
     print("Writing config to file")
@@ -181,8 +170,6 @@ def write_config(configfile: str, config: dict[str, str]) -> None:
         json.dump(config, f)
 
 
-# TODO: check if path exists
-# TODO: try/except around open and json.load, return empty dict on failure
 def read_config(configfile: str) -> dict[str, str]:
     config = dict()
     file_path = Path(configfile).expanduser()
@@ -269,7 +256,6 @@ class Task:
     submit_file: str = "N/A"
 
 
-# TODO: this should be part of a client class or module
 def parse_task_list(html: AnyStr) -> list[Task]:
     """Parse html to find tasks and their status, return something useful, possibly a specific data class"""
     content_element = htmlement.fromstring(html).find('.//div[@class="content"]')
@@ -302,7 +288,6 @@ def parse_task_list(html: AnyStr) -> list[Task]:
     return task_list
 
 
-# TODO: This should be part of a UI class or module
 def print_task_list(
     task_list: list[Task], filter: Optional[str] = None, limit: Optional[int] = None
 ) -> None:
@@ -315,8 +300,6 @@ def print_task_list(
                 return
 
 
-# TODO: Implement function that parser the specific task page into Task object
-# TODO: should we split up this function in a bunch of smaller ones? or will beautifulsoup make it simpler?
 def parse_task(html: AnyStr) -> Task:
     root = htmlement.fromstring(html)
     task_link_element = root.find('.//div[@class="nav sidebar"]/a')
@@ -358,7 +341,6 @@ def print_task(task: Task) -> None:
     print(f"\nSubmission file name: {task.submit_file}")
 
 
-# TODO: Implement function that posts the submit form with the correct file
 def submit_task(task_id: str, filename: str) -> None:
     """submit file to the submit form or task_id"""
     # NOTE: use parse_form
