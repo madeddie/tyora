@@ -130,16 +130,26 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     )
     subparsers = parser.add_subparsers(required=True)
 
-    parser_config = subparsers.add_parser("configure", help="Configure moocfi_cses")
-    parser_config.set_defaults(cmd="configure")
+    # login subparser
+    parser_login = subparsers.add_parser("login", help="Login to mooc.fi CSES")
+    parser_login.set_defaults(cmd="login")
 
+    # list exercises subparser
     parser_list = subparsers.add_parser("list", help="List exercises")
     parser_list.set_defaults(cmd="list")
     parser_list.add_argument(
         "--filter",
-        help="List complete, incomplete or all tasks (default: %(default)s)",
+        help="List only complete or incomplete tasks (default: all)",
         choices=["complete", "incomplete"],
     )
+    parser_list.add_argument(
+        "--limit", help="Maximum amount of items to list", type=int
+    )
+
+    # show exercise subparser
+    parser_show = subparsers.add_parser("show", help="Show details of an exercise")
+    parser_show.set_defaults(cmd="show")
+    parser_show.add_argument("task_id", help="Numerical task identifier or task name")
 
     return parser.parse_args(args)
 
@@ -288,10 +298,22 @@ def parse_task_list(html: str | bytes) -> list[Task]:
 
 
 # TODO: This should be part of a UI class or module
-def print_task_list(task_list: list[Task], filter: Optional[str] = None) -> None:
+def print_task_list(
+    task_list: list[Task], filter: Optional[str] = None, limit: Optional[int] = None
+) -> None:
+    count: int = 0
     for task in task_list:
         if not filter or filter == task.state.value:
             print(f"- {task.id}: {task.name} {TASK_STATE_ICON[task.state]}")
+            count += 1
+            if limit and count >= limit:
+                return
+
+
+# TODO: Implement function that parser the specific task page into Task object
+def parse_task(html: str | bytes, task: Task) -> Task:
+    task = Task("a", "b", TaskState.COMPLETE)
+    return task
 
 
 # TODO: Implement function that posts the submit form with the correct file
@@ -299,12 +321,6 @@ def submit_task(task_id: str, filename: str) -> None:
     """submit file to the submit form or task_id"""
     # NOTE: use parse_form
     ...
-
-
-# TODO: Implement function that parser the specific task page into Task object
-def parse_task(html: str | bytes, task: Task) -> Task:
-    task = Task("a", "b", TaskState.COMPLETE)
-    return task
 
 
 def main() -> None:
@@ -316,7 +332,7 @@ def main() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    if args.cmd == "configure":
+    if args.cmd == "login":
         config = create_config()
         write_config(args.config, config)
         return
@@ -352,7 +368,7 @@ def main() -> None:
     if args.cmd == "list":
         html = session.http_request(base_url)
         task_list = parse_task_list(html)
-        print_task_list(task_list, filter=args.filter)
+        print_task_list(task_list, filter=args.filter, limit=args.limit)
 
 
 if __name__ == "__main__":
