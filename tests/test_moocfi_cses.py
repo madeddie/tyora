@@ -49,7 +49,6 @@ class TestParseForm:
     )
 
 
-# TODO: verify these mocked tests are actually accurate
 # TODO: add tests for unreachable and failing endpoints, 4xx, 5xx, etc
 @pytest.fixture
 def mock_session() -> moocfi_cses.Session:
@@ -64,7 +63,7 @@ def test_login_successful(mock_session: moocfi_cses.Session) -> None:
     # Mocking the HTTP response for successful login
     with requests_mock.Mocker() as m:
         m.get(
-            "https://example.com",
+            "https://example.com/list",
             text='<a class="account" href="/user/1234">test_user@test.com (mooc.fi)</a>',
         )
         mock_session.login()
@@ -75,7 +74,7 @@ def test_login_failed(mock_session: moocfi_cses.Session) -> None:
     # Mocking the HTTP response for failed login
     with requests_mock.Mocker() as m:
         m.get(
-            "https://example.com",
+            "https://example.com/list",
             text='<a class="account" href="/login/oauth-redirect?site=mooc.fi">Login using mooc.fi</a>',
         )
         m.get("https://example.com/account", text="Login required")
