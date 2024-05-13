@@ -270,7 +270,7 @@ class Task:
 
 
 # TODO: this should be part of a client class or module
-def parse_task_list(html: str | bytes) -> list[Task]:
+def parse_task_list(html: AnyStr) -> list[Task]:
     """Parse html to find tasks and their status, return something useful, possibly a specific data class"""
     content_element = htmlement.fromstring(html).find('.//div[@class="content"]')
     task_list = list()
@@ -317,7 +317,7 @@ def print_task_list(
 
 # TODO: Implement function that parser the specific task page into Task object
 # TODO: should we split up this function in a bunch of smaller ones? or will beautifulsoup make it simpler?
-def parse_task(html: str | bytes) -> Task:
+def parse_task(html: AnyStr) -> Task:
     root = htmlement.fromstring(html)
     task_link_element = root.find('.//div[@class="nav sidebar"]/a')
     task_link = task_link_element if task_link_element is not None else Element("a")
