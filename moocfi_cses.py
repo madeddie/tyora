@@ -10,10 +10,12 @@ from enum import Enum
 from getpass import getpass
 import logging
 import json
-import urllib.parse
+from urllib.parse import urljoin
 from pathlib import Path
 from typing import AnyStr, Optional
+from xml.etree.ElementTree import Element, tostring
 
+from html2text import html2text
 import htmlement
 import requests
 
@@ -34,7 +36,7 @@ class Session:
 
     @property
     def is_logged_in(self) -> bool:
-        html = self.http_request(self.base_url)
+        html = self.http_request(urljoin(self.base_url, "list"))
         login_link = find_link(html, './/a[@class="account"]')
         login_text = login_link.get("text") or ""
         return self.username in login_text
@@ -53,10 +55,10 @@ class Session:
         if self.is_logged_in:
             return
 
-        res = self.http_session.get(self.base_url)
+        res = self.http_session.get(urljoin(self.base_url, "list"))
         login_link = find_link(res.text, './/a[@class="account"]')
         if login_link:
-            login_url = urllib.parse.urljoin(res.url, login_link.get("href"))
+            login_url = urljoin(res.url, login_link.get("href"))
         else:
             logging.debug(
                 f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}"
@@ -78,7 +80,7 @@ class Session:
         login_form["session[password]"] = self.password
 
         self.http_session.post(
-            url=urllib.parse.urljoin(res.url, action),
+            url=urljoin(res.url, action),
             headers={"referer": res.url},
             data=login_form,
         )
@@ -130,16 +132,26 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     )
     subparsers = parser.add_subparsers(required=True)
 
-    parser_config = subparsers.add_parser("configure", help="Configure moocfi_cses")
-    parser_config.set_defaults(cmd="configure")
+    # login subparser
+    parser_login = subparsers.add_parser("login", help="Login to mooc.fi CSES")
+    parser_login.set_defaults(cmd="login")
 
+    # list exercises subparser
     parser_list = subparsers.add_parser("list", help="List exercises")
     parser_list.set_defaults(cmd="list")
     parser_list.add_argument(
         "--filter",
-        help="List complete, incomplete or all tasks (default: %(default)s)",
+        help="List only complete or incomplete tasks (default: all)",
         choices=["complete", "incomplete"],
     )
+    parser_list.add_argument(
+        "--limit", help="Maximum amount of items to list", type=int
+    )
+
+    # show exercise subparser
+    parser_show = subparsers.add_parser("show", help="Show details of an exercise")
+    parser_show.set_defaults(cmd="show")
+    parser_show.add_argument("task_id", help="Numerical task identifier")
 
     return parser.parse_args(args)
 
@@ -252,10 +264,13 @@ class Task:
     id: str
     name: str
     state: TaskState
+    description: str = "N/A"
+    code: str = "N/A"
+    submit_file: str = "N/A"
 
 
 # TODO: this should be part of a client class or module
-def parse_task_list(html: str | bytes) -> list[Task]:
+def parse_task_list(html: AnyStr) -> list[Task]:
     """Parse html to find tasks and their status, return something useful, possibly a specific data class"""
     content_element = htmlement.fromstring(html).find('.//div[@class="content"]')
     task_list = list()
@@ -288,10 +303,59 @@ def parse_task_list(html: str | bytes) -> list[Task]:
 
 
 # TODO: This should be part of a UI class or module
-def print_task_list(task_list: list[Task], filter: Optional[str] = None) -> None:
+def print_task_list(
+    task_list: list[Task], filter: Optional[str] = None, limit: Optional[int] = None
+) -> None:
+    count: int = 0
     for task in task_list:
         if not filter or filter == task.state.value:
             print(f"- {task.id}: {task.name} {TASK_STATE_ICON[task.state]}")
+            count += 1
+            if limit and count >= limit:
+                return
+
+
+# TODO: Implement function that parser the specific task page into Task object
+# TODO: should we split up this function in a bunch of smaller ones? or will beautifulsoup make it simpler?
+def parse_task(html: AnyStr) -> Task:
+    root = htmlement.fromstring(html)
+    task_link_element = root.find('.//div[@class="nav sidebar"]/a')
+    task_link = task_link_element if task_link_element is not None else Element("a")
+    task_id = task_link.get("href", "").split("/")[-1]
+    task_name = task_link.text or "N/A"
+    task_span_element = task_link.find("span")
+    task_span = task_span_element if task_span_element is not None else Element("span")
+    task_span_class = task_span.get("class", "")
+    desc_div_element = root.find('.//div[@class="md"]')
+    desc_div = desc_div_element if desc_div_element is not None else Element("div")
+    description = html2text(tostring(desc_div).decode("utf8"))
+    code = root.findtext(".//pre", "N/A")
+    submit_file = next(
+        iter(
+            [
+                code_element.text
+                for code_element in root.findall(".//code")
+                if code_element.text is not None and ".py" in code_element.text
+            ]
+        ),
+        "N/A",
+    )
+    task = Task(
+        id=task_id,
+        name=task_name,
+        state=TaskState.COMPLETE if "full" in task_span_class else TaskState.INCOMPLETE,
+        description=description.strip(),
+        code=code,
+        submit_file=submit_file,
+    )
+
+    return task
+
+
+def print_task(task: Task) -> None:
+    print(f"{task.id}: {task.name} {TASK_STATE_ICON[task.state]}")
+    print(task.description)
+    print(f"\nSubmission file name: {task.submit_file}")
 
 
 # TODO: Implement function that posts the submit form with the correct file
@@ -299,12 +363,6 @@ def submit_task(task_id: str, filename: str) -> None:
     """submit file to the submit form or task_id"""
     # NOTE: use parse_form
     ...
-
-
-# TODO: Implement function that parser the specific task page into Task object
-def parse_task(html: str | bytes, task: Task) -> Task:
-    task = Task("a", "b", TaskState.COMPLETE)
-    return task
 
 
 def main() -> None:
@@ -316,7 +374,7 @@ def main() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    if args.cmd == "configure":
+    if args.cmd == "login":
         config = create_config()
         write_config(args.config, config)
         return
@@ -326,7 +384,7 @@ def main() -> None:
     # Merge cli args and configfile parameters in one dict
     config.update((k, v) for k, v in vars(args).items() if v is not None)
 
-    base_url = f"https://cses.fi/{config['course']}/list/"
+    base_url = f"https://cses.fi/{config['course']}/"
 
     cookiefile = None
     cookies = dict()
@@ -350,9 +408,14 @@ def main() -> None:
         write_cookie_file(str(cookiefile), cookies)
 
     if args.cmd == "list":
-        html = session.http_request(base_url)
+        html = session.http_request(urljoin(base_url, "list"))
         task_list = parse_task_list(html)
-        print_task_list(task_list, filter=args.filter)
+        print_task_list(task_list, filter=args.filter, limit=args.limit)
+
+    if args.cmd == "show":
+        html = session.http_request(urljoin(base_url, f"task/{args.task_id}"))
+        task = parse_task(html)
+        print_task(task)
 
 
 if __name__ == "__main__":
