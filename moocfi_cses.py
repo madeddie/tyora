@@ -53,7 +53,7 @@ class Session:
         if login_link:
             login_url = urljoin(res.url, login_link.get("href"))
         else:
-            logging.debug(
+            logger.debug(
                 f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}"
             )
             raise ValueError("Failed to find login url")
@@ -64,7 +64,7 @@ class Session:
             action = login_form.get("_action")
             login_form.pop("_action")
         else:
-            logging.debug(
+            logger.debug(
                 f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}"
             )
             raise ValueError("Failed to find login form")
@@ -79,7 +79,7 @@ class Session:
         )
 
         if not self.is_logged_in:
-            logging.debug(
+            logger.debug(
                 f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}"
             )
             raise ValueError("Login failed")
@@ -194,7 +194,7 @@ def read_cookie_file(cookiefile: str) -> dict[str, str]:
         with open(cookiefile, "r") as f:
             return json.load(f)
     except (FileNotFoundError, json.decoder.JSONDecodeError) as e:
-        logging.debug(f"Error reading cookies from {cookiefile}: {e}")
+        logger.debug(f"Error reading cookies from {cookiefile}: {e}")
     return {}
 
 
