@@ -1,7 +1,8 @@
-# mooc.fi CSES exercise task CLI
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/madeddie/moocfi_cses/test.yml)](https://github.com/madeddie/moocfi_cses/actions)
+# Tyora: mooc.fi CSES exercise task CLI
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/madeddie/tyora/test.yml)](https://github.com/madeddie/tyora/actions)
 
-This script interacts with the mooc.fi instance of the CSES (https://cses.fi) website to perform various actions such as logging in, retrieving exercise lists, and submitting solutions. It provides a convenient way to view and submit tasks.
+This script interacts with the mooc.fi instance of the CSES (https://cses.fi) website to perform various actions such as logging in, retrieving exercise lists, and submitting solutions.
+It provides a convenient way to view and submit tasks.
 
 ## Features
 
@@ -14,13 +15,13 @@ This script interacts with the mooc.fi instance of the CSES (https://cses.fi) we
 1. Clone the repository to your local machine:
 
    ```bash
-   git clone https://github.com/madeddie/moocfi_cses.git
+   git clone https://github.com/madeddie/tyora.git
    ```
 
 2. Navigate to the project directory:
 
    ```bash
-   cd moocfi_cses
+   cd tyora
    ```
 
 3. Install the required dependencies:
@@ -34,7 +35,7 @@ This script interacts with the mooc.fi instance of the CSES (https://cses.fi) we
 1. Configure the script by running:
 
    ```bash
-   python moocfi_cses.py configure
+   python tyora.py configure
    ```
 
    Follow the prompts to enter your mooc.fi username and password. This information will be stored for future use.
@@ -42,7 +43,7 @@ This script interacts with the mooc.fi instance of the CSES (https://cses.fi) we
 2. List available exercises:
 
    ```bash
-   python moocfi_cses.py list
+   python tyora.py list
    ```
 
    This will retrieve and display a list of exercises available on the CSES platform.
@@ -50,10 +51,14 @@ This script interacts with the mooc.fi instance of the CSES (https://cses.fi) we
 3. Submit a solution:
 
    ```bash
-   python moocfi_cses.py submit <exercise_id> <path_to_solution_file>
+   python tyora.py submit <exercise_id> <path_to_solution_file>
    ```
 
    Replace `<exercise_id>` with the ID of the exercise you want to submit a solution for, and `<path_to_solution_file>` with the path to your solution file.
+
+## Origin of name
+
+In Finnish, "työ" means "work", "pyörä" means "wheel". "Työrä" would be "work wheel"? Anyway, `pyora` was already taken, so I went with `tyora`... ;)
 
 ## Contributing
 
