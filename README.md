@@ -58,7 +58,8 @@ It provides a convenient way to view and submit tasks.
 
 ## Origin of name
 
-In Finnish, "työ" means "work", "pyörä" means "wheel". "Työrä" would be "work wheel"? Anyway, `pyora` was already taken, so I went with `tyora`... ;)
+The name "tyora" is derived from Finnish words: "työ" meaning "work" and "pyörä" meaning "wheel".
+Anyway, `pyora` was already taken, so I went with `tyora`... ;)
 
 ## Contributing
 
