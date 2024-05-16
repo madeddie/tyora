@@ -287,9 +287,11 @@ def parse_task_list(html: AnyStr) -> list[Task]:
                 task = Task(
                     id=item_id,
                     name=item_name,
-                    state=TaskState.COMPLETE
-                    if "full" in item_class
-                    else TaskState.INCOMPLETE,
+                    state=(
+                        TaskState.COMPLETE
+                        if "full" in item_class
+                        else TaskState.INCOMPLETE
+                    ),
                 )
                 task_list.append(task)
 
