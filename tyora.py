@@ -15,7 +15,7 @@ import htmlement
 import requests
 
 
-logger = logging.getLogger(name="moocfi_cses")
+logger = logging.getLogger(name="tyora")
 
 
 @dataclass
@@ -116,7 +116,7 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--config",
         help="Location of config file (default: %(default)s)",
-        default="~/.config/moocfi_cses/config.json",
+        default="~/.config/tyora/config.json",
     )
     parser.add_argument(
         "--no-state",
@@ -169,7 +169,7 @@ def create_config() -> dict[str, str]:
 def write_config(configfile: str, config: dict[str, str]) -> None:
     file_path = Path(configfile).expanduser()
     if file_path.exists():
-        # TODO: https://github.com/madeddie/moocfi_cses/issues/28
+        # TODO: https://github.com/madeddie/tyora/issues/28
         ...
     file_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
     print("Writing config to file")
@@ -287,9 +287,11 @@ def parse_task_list(html: AnyStr) -> list[Task]:
                 task = Task(
                     id=item_id,
                     name=item_name,
-                    state=TaskState.COMPLETE
-                    if "full" in item_class
-                    else TaskState.INCOMPLETE,
+                    state=(
+                        TaskState.COMPLETE
+                        if "full" in item_class
+                        else TaskState.INCOMPLETE
+                    ),
                 )
                 task_list.append(task)
 
@@ -390,7 +392,7 @@ def main() -> None:
     cookiefile = None
     cookies = dict()
     if not args.no_state:
-        state_dir = Path("~/.local/state/moocfi_cses").expanduser()
+        state_dir = Path("~/.local/state/tyora").expanduser()
         if not state_dir.exists():
             state_dir.mkdir(parents=True, exist_ok=True)
         cookiefile = state_dir / "cookies.txt"

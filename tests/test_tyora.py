@@ -1,15 +1,15 @@
-import moocfi_cses
+import tyora
 import pytest
 import requests_mock
 
 
 def test_parse_args_missing_args() -> None:
     with pytest.raises(SystemExit):
-        moocfi_cses.parse_args()
+        tyora.parse_args()
 
 
 def test_parse_args_command() -> None:
-    args = moocfi_cses.parse_args(["list"])
+    args = tyora.parse_args(["list"])
     assert args.cmd == "list"
 
 
@@ -25,16 +25,13 @@ class TestFindLink:
     valid_return = {"href": "somelink", "text": "sometext"}
 
     def test_find_link_success(self) -> None:
-        assert (
-            moocfi_cses.find_link(self.valid_html, self.valid_xpath)
-            == self.valid_return
-        )
+        assert tyora.find_link(self.valid_html, self.valid_xpath) == self.valid_return
 
     def test_find_link_bad_xpath(self) -> None:
-        assert moocfi_cses.find_link(self.valid_html, self.invalid_xpath) == {}
+        assert tyora.find_link(self.valid_html, self.invalid_xpath) == {}
 
     def test_find_link_bad_html(self) -> None:
-        assert moocfi_cses.find_link(self.invalid_html, self.valid_xpath) == {}
+        assert tyora.find_link(self.invalid_html, self.valid_xpath) == {}
 
 
 class TestParseForm:
@@ -51,15 +48,15 @@ class TestParseForm:
 
 # TODO: add tests for unreachable and failing endpoints, 4xx, 5xx, etc
 @pytest.fixture
-def mock_session() -> moocfi_cses.Session:
-    return moocfi_cses.Session(
+def mock_session() -> tyora.Session:
+    return tyora.Session(
         username="test_user@test.com",
         password="test_password",
         base_url="https://example.com",
     )
 
 
-def test_login_successful(mock_session: moocfi_cses.Session) -> None:
+def test_login_successful(mock_session: tyora.Session) -> None:
     # Mocking the HTTP response for successful login
     with requests_mock.Mocker() as m:
         m.get(
@@ -70,7 +67,7 @@ def test_login_successful(mock_session: moocfi_cses.Session) -> None:
         assert mock_session.is_logged_in
 
 
-def test_login_failed(mock_session: moocfi_cses.Session) -> None:
+def test_login_failed(mock_session: tyora.Session) -> None:
     # Mocking the HTTP response for failed login
     with requests_mock.Mocker() as m:
         m.get(
@@ -84,17 +81,13 @@ def test_login_failed(mock_session: moocfi_cses.Session) -> None:
 
 
 # TODO: functions that use user input or read or write files
-def test_create_config() -> None:
-    ...
+def test_create_config() -> None: ...
 
 
-def test_write_config() -> None:
-    ...
+def test_write_config() -> None: ...
 
 
-def test_read_config() -> None:
-    ...
+def test_read_config() -> None: ...
 
 
-def test_get_cookiejar() -> None:
-    ...
+def test_get_cookiejar() -> None: ...
