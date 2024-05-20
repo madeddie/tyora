@@ -6,6 +6,7 @@ import logging
 import json
 from urllib.parse import urljoin
 from pathlib import Path
+from time import sleep
 from typing import AnyStr, Optional
 from xml.etree.ElementTree import Element, tostring
 
@@ -145,6 +146,15 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     parser_show.set_defaults(cmd="show")
     parser_show.add_argument("task_id", help="Numerical task identifier")
 
+    # submit exercise solution subparser
+    parser_submit = subparsers.add_parser("submit", help="Submit an exercise solution")
+    parser_submit.set_defaults(cmd="submit")
+    parser_submit.add_argument(
+        "--filename",
+        help="Filename of the solution to submit (if not given will be guessed from task description)",
+    )
+    parser_submit.add_argument("task_id", help="Numerical task identifier")
+
     return parser.parse_args(args)
 
 
@@ -221,7 +231,7 @@ def find_link(html: AnyStr, xpath: str) -> dict[str, str | None]:
     return link_data
 
 
-def parse_form(html: AnyStr, xpath: str = ".//form") -> dict[str, str | None]:
+def parse_form(html: AnyStr, xpath: str = ".//form") -> dict:
     """Search for the first form in html and return dict with action and all other found inputs"""
     form_element = htmlement.fromstring(html).find(xpath)
     form_data = dict()
@@ -251,9 +261,10 @@ class Task:
     id: str
     name: str
     state: TaskState
-    description: str = "N/A"
-    code: str = "N/A"
-    submit_file: str = "N/A"
+    description: Optional[str] = None
+    code: Optional[str] = None
+    submit_file: Optional[str] = None
+    submit_link: Optional[str] = None
 
 
 def parse_task_list(html: AnyStr) -> list[Task]:
@@ -279,9 +290,11 @@ def parse_task_list(html: AnyStr) -> list[Task]:
                 task = Task(
                     id=item_id,
                     name=item_name,
-                    state=TaskState.COMPLETE
-                    if "full" in item_class
-                    else TaskState.INCOMPLETE,
+                    state=(
+                        TaskState.COMPLETE
+                        if "full" in item_class
+                        else TaskState.INCOMPLETE
+                    ),
                 )
                 task_list.append(task)
 
@@ -305,14 +318,25 @@ def parse_task(html: AnyStr) -> Task:
     task_link_element = root.find('.//div[@class="nav sidebar"]/a')
     task_link = task_link_element if task_link_element is not None else Element("a")
     task_id = task_link.get("href", "").split("/")[-1]
-    task_name = task_link.text or "N/A"
+    if not task_id:
+        raise ValueError("Failed to find task id")
+    task_name = task_link.text or None
+    if not task_name:
+        raise ValueError("Failed to find task name")
     task_span_element = task_link.find("span")
     task_span = task_span_element if task_span_element is not None else Element("span")
     task_span_class = task_span.get("class", "")
     desc_div_element = root.find('.//div[@class="md"]')
     desc_div = desc_div_element if desc_div_element is not None else Element("div")
     description = html2text(tostring(desc_div).decode("utf8"))
-    code = root.findtext(".//pre", "N/A")
+    code = root.findtext(".//pre", None)
+    submit_link_element = root.find('.//a[.="Submit"]')
+    submit_link = (
+        submit_link_element.get("href", None)
+        if submit_link_element is not None
+        else None
+    )
+
     submit_file = next(
         iter(
             [
@@ -321,7 +345,7 @@ def parse_task(html: AnyStr) -> Task:
                 if code_element.text is not None and ".py" in code_element.text
             ]
         ),
-        "N/A",
+        None,
     )
     task = Task(
         id=task_id,
@@ -330,6 +354,7 @@ def parse_task(html: AnyStr) -> Task:
         description=description.strip(),
         code=code,
         submit_file=submit_file,
+        submit_link=submit_link,
     )
 
     return task
@@ -341,10 +366,32 @@ def print_task(task: Task) -> None:
     print(f"\nSubmission file name: {task.submit_file}")
 
 
-def submit_task(task_id: str, filename: str) -> None:
-    """submit file to the submit form or task_id"""
-    # NOTE: use parse_form
-    ...
+# def submit_task(task_id: str, filename: str) -> None:
+#     """submit file to the submit form or task_id"""
+#     html = session.http_request(urljoin(base_url, f"task/{task_id}"))
+#     task = parse_task(html)
+#     answer = input("Do you want to submit this task? (y/n): ")
+#     if answer in ('y', 'Y'):
+#         with open(filename, 'r') as f:
+
+
+def parse_submit_result(html: AnyStr) -> dict[str, str]:
+    root = htmlement.fromstring(html)
+    submit_status_element = root.find('.//td[.="Status:"]/..') or Element("td")
+    submit_status_span_element = submit_status_element.find("td/span") or Element(
+        "span"
+    )
+    submit_status = submit_status_span_element.text or ""
+    submit_result_element = root.find('.//td[.="Result:"]/..') or Element("td")
+    submit_result_span_element = submit_result_element.find("td/span") or Element(
+        "span"
+    )
+    submit_result = submit_result_span_element.text or ""
+
+    return {
+        "status": submit_status.lower(),
+        "result": submit_result.lower(),
+    }
 
 
 def main() -> None:
@@ -396,8 +443,48 @@ def main() -> None:
 
     if args.cmd == "show":
         html = session.http_request(urljoin(base_url, f"task/{args.task_id}"))
-        task = parse_task(html)
+        try:
+            task = parse_task(html)
+        except ValueError as e:
+            logger.debug(f"Error parsing task: {e}")
+            raise
         print_task(task)
+
+    if args.cmd == "submit":
+        html = session.http_request(urljoin(base_url, f"task/{args.task_id}"))
+        task = parse_task(html)
+        if not task.submit_file and not args.filename:
+            raise ValueError("No submission filename found")
+        if not task.submit_link:
+            raise ValueError("No submission link found")
+        submit_file = args.filename or task.submit_file or ""
+
+        submit_form_html = session.http_request(urljoin(base_url, task.submit_link))
+        submit_form_data = parse_form(submit_form_html)
+        action = submit_form_data.pop("_action")
+
+        for key, value in submit_form_data.items():
+            submit_form_data[key] = (None, value)
+        submit_form_data["file"] = (submit_file, open(submit_file, "rb"))
+        submit_form_data["lang"] = (None, "Python3")
+        submit_form_data["option"] = (None, "CPython3")
+
+        res = session.http_session.post(
+            urljoin(base_url, action), files=submit_form_data
+        )
+        html = res.text
+        result_url = res.url
+        print("Waiting for test results.", end="")
+        while "Test report" not in html:
+            print(".", end="")
+            sleep(1)
+            html = session.http_request(result_url)
+
+        print()
+        results = parse_submit_result(html)
+
+        print(f"Submission status: {results['status']}")
+        print(f"Submission result: {results['result']}")
 
 
 if __name__ == "__main__":

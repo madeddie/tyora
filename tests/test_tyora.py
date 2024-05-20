@@ -25,10 +25,7 @@ class TestFindLink:
     valid_return = {"href": "somelink", "text": "sometext"}
 
     def test_find_link_success(self) -> None:
-        assert (
-            tyora.find_link(self.valid_html, self.valid_xpath)
-            == self.valid_return
-        )
+        assert tyora.find_link(self.valid_html, self.valid_xpath) == self.valid_return
 
     def test_find_link_bad_xpath(self) -> None:
         assert tyora.find_link(self.valid_html, self.invalid_xpath) == {}
@@ -84,17 +81,13 @@ def test_login_failed(mock_session: tyora.Session) -> None:
 
 
 # TODO: functions that use user input or read or write files
-def test_create_config() -> None:
-    ...
+def test_create_config() -> None: ...
 
 
-def test_write_config() -> None:
-    ...
+def test_write_config() -> None: ...
 
 
-def test_read_config() -> None:
-    ...
+def test_read_config() -> None: ...
 
 
-def test_get_cookiejar() -> None:
-    ...
+def test_get_cookiejar() -> None: ...
