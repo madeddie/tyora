@@ -375,6 +375,25 @@ def print_task(task: Task) -> None:
 #         with open(filename, 'r') as f:
 
 
+def parse_submit_result(html: AnyStr) -> dict[str, str]:
+    root = htmlement.fromstring(html)
+    submit_status_element = root.find('.//td[.="Status:"]/..') or Element("td")
+    submit_status_span_element = submit_status_element.find("td/span") or Element(
+        "span"
+    )
+    submit_status = submit_status_span_element.text or ""
+    submit_result_element = root.find('.//td[.="Result:"]/..') or Element("td")
+    submit_result_span_element = submit_result_element.find("td/span") or Element(
+        "span"
+    )
+    submit_result = submit_result_span_element.text or ""
+
+    return {
+        "status": submit_status.lower(),
+        "result": submit_result.lower(),
+    }
+
+
 def main() -> None:
     args = parse_args()
 
@@ -462,20 +481,10 @@ def main() -> None:
             html = session.http_request(result_url)
 
         print()
-        root = htmlement.fromstring(html)
-        submit_status_element = root.find('.//td[.="Status:"]/..') or Element("td")
-        submit_status_span_element = submit_status_element.find("td/span") or Element(
-            "span"
-        )
-        submit_status = submit_status_span_element.text or ""
-        submit_result_element = root.find('.//td[.="Result:"]/..') or Element("td")
-        submit_result_span_element = submit_result_element.find("td/span") or Element(
-            "span"
-        )
-        submit_result = submit_result_span_element.text or ""
+        results = parse_submit_result(html)
 
-        print(f"Submission status: {submit_status.lower()}")
-        print(f"Submission result: {submit_result.lower()}")
+        print(f"Submission status: {results['status']}")
+        print(f"Submission result: {results['result']}")
 
 
 if __name__ == "__main__":
