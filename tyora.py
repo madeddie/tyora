@@ -149,7 +149,10 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     # submit exercise solution subparser
     parser_submit = subparsers.add_parser("submit", help="Submit an exercise solution")
     parser_submit.set_defaults(cmd="submit")
-    parser_submit.add_argument("--filename", help="Filename of the solution to submit")
+    parser_submit.add_argument(
+        "--filename",
+        help="Filename of the solution to submit (if not given will be guessed from task description)",
+    )
     parser_submit.add_argument("task_id", help="Numerical task identifier")
 
     return parser.parse_args(args)
@@ -315,19 +318,23 @@ def parse_task(html: AnyStr) -> Task:
     task_link_element = root.find('.//div[@class="nav sidebar"]/a')
     task_link = task_link_element if task_link_element is not None else Element("a")
     task_id = task_link.get("href", "").split("/")[-1]
-    task_name = task_link.text or "N/A"
+    if not task_id:
+        raise ValueError("Failed to find task id")
+    task_name = task_link.text or None
+    if not task_name:
+        raise ValueError("Failed to find task name")
     task_span_element = task_link.find("span")
     task_span = task_span_element if task_span_element is not None else Element("span")
     task_span_class = task_span.get("class", "")
     desc_div_element = root.find('.//div[@class="md"]')
     desc_div = desc_div_element if desc_div_element is not None else Element("div")
     description = html2text(tostring(desc_div).decode("utf8"))
-    code = root.findtext(".//pre", "N/A")
+    code = root.findtext(".//pre", None)
     submit_link_element = root.find('.//a[.="Submit"]')
     submit_link = (
-        submit_link_element.get("href", "N/A")
+        submit_link_element.get("href", None)
         if submit_link_element is not None
-        else "N/A"
+        else None
     )
 
     submit_file = next(
@@ -338,7 +345,7 @@ def parse_task(html: AnyStr) -> Task:
                 if code_element.text is not None and ".py" in code_element.text
             ]
         ),
-        "N/A",
+        None,
     )
     task = Task(
         id=task_id,
@@ -417,16 +424,21 @@ def main() -> None:
 
     if args.cmd == "show":
         html = session.http_request(urljoin(base_url, f"task/{args.task_id}"))
-        task = parse_task(html)
+        try:
+            task = parse_task(html)
+        except ValueError as e:
+            logger.debug(f"Error parsing task: {e}")
+            raise
         print_task(task)
 
     if args.cmd == "submit":
         html = session.http_request(urljoin(base_url, f"task/{args.task_id}"))
         task = parse_task(html)
-        if not task.submit_file or task.submit_file == "N/A":
+        if not task.submit_file and not args.filename:
             raise ValueError("No submission filename found")
-        if not task.submit_link or task.submit_link == "N/A":
+        if not task.submit_link:
             raise ValueError("No submission link found")
+        submit_file = args.filename or task.submit_file or ""
 
         submit_form_html = session.http_request(urljoin(base_url, task.submit_link))
         submit_form_data = parse_form(submit_form_html)
@@ -434,7 +446,7 @@ def main() -> None:
 
         for key, value in submit_form_data.items():
             submit_form_data[key] = (None, value)
-        submit_form_data["file"] = (task.submit_file, open(task.submit_file, "rb"))
+        submit_form_data["file"] = (submit_file, open(submit_file, "rb"))
         submit_form_data["lang"] = (None, "Python3")
         submit_form_data["option"] = (None, "CPython3")
 
