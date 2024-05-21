@@ -2,6 +2,7 @@
 name = "tyora"
 version = "0.1.0"
 description = "CLI to interact with the mooc.fi instance of CSES"
+license = "MIT"
 authors = [
     { name = "Edwin Hermans", email = "edwin@madtech.cx" }
 ]
