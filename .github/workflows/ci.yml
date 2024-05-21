@@ -43,8 +43,8 @@ jobs:
         echo '```' > pytest.log
         rye test | tee -a pytest.log
         echo '```' >> pytest.log
-    - name: PR comment pytest output
-      uses: thollander/actions-comment-pull-request@v2
-      with:
-        filePath: pytest.log
-      if: github.event_name == 'pull_request'
+    # - name: PR comment pytest output
+    #   uses: thollander/actions-comment-pull-request@v2
+    #   with:
+    #     filePath: pytest.log
+    #   if: github.event_name == 'pull_request'
