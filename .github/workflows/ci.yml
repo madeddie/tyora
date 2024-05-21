@@ -21,8 +21,9 @@ jobs:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
-    permissions:
-      pull-requests: write
+    # Required for the PR comment action
+    # permissions:
+    #   pull-requests: write
 
     steps:
     - uses: actions/checkout@v4
@@ -38,15 +39,18 @@ jobs:
       if: steps.setup-rye.outputs.cache-hit != 'true'
       run: |
         rye sync --no-lock
-    - name: run ruff
-      uses: chartboost/ruff-action@v1
+    - name: rye format
+      run: rye fmt --check
+    - name: rye lint
+      run: rye lint
     - name: run tests
       run: |
         echo '```' > pytest.log
         rye test | tee -a pytest.log
         echo '```' >> pytest.log
-    - name: PR comment pytest output
-      uses: thollander/actions-comment-pull-request@v2
-      with:
-        filePath: pytest.log
-      if: github.event_name == 'pull_request'
+    # Disabled until we get this to work only once in the matrix
+    # - name: PR comment pytest output
+    #   uses: thollander/actions-comment-pull-request@v2
+    #   with:
+    #     filePath: pytest.log
+    #   if: github.event_name == 'pull_request'
