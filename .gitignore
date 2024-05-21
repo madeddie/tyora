@@ -1,9 +1,13 @@
-# python dev objects
-.venv
-__pycache__
+# python generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
 
-# local testing objects
-*.json
-cookies.txt
+# venv
+.venv
+
+# testing files
 .coverage
-.envrc
