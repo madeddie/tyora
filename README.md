@@ -1,5 +1,5 @@
 # Tyora: mooc.fi CSES exercise task CLI
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/madeddie/tyora/test.yml)](https://github.com/madeddie/tyora/actions)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/madeddie/tyora/ci.yml)](https://github.com/madeddie/tyora/actions)
 
 This script interacts with the mooc.fi instance of the CSES (https://cses.fi) website to perform various actions such as logging in, retrieving exercise lists, and submitting solutions.
 It provides a convenient way to view and submit tasks.
