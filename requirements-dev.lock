@@ -11,28 +11,47 @@
 -e file:.
 certifi==2024.2.2
     # via requests
+cfgv==3.4.0
+    # via pre-commit
 charset-normalizer==3.3.2
     # via requests
 coverage==7.5.1
     # via pytest-cov
+distlib==0.3.8
+    # via virtualenv
+filelock==3.14.0
+    # via virtualenv
 html2text==2024.2.26
     # via tyora
 htmlement==2.0.0
     # via tyora
+identify==2.5.36
+    # via pre-commit
 idna==3.7
     # via requests
 iniconfig==2.0.0
     # via pytest
+nodeenv==1.8.0
+    # via pre-commit
 packaging==24.0
     # via pytest
+platformdirs==4.2.2
+    # via virtualenv
 pluggy==1.5.0
     # via pytest
+pre-commit==3.7.1
 pytest==8.2.1
     # via pytest-cov
 pytest-cov==5.0.0
+pyyaml==6.0.1
+    # via pre-commit
 requests==2.32.1
     # via requests-mock
     # via tyora
 requests-mock==1.12.1
+setuptools==70.0.0
+    # via nodeenv
 urllib3==2.2.1
     # via requests
+virtualenv==20.26.2
+    # via pre-commit
