@@ -32,17 +32,17 @@ jobs:
       with:
         enable-cache: false
         cache-prefix: ${{ matrix.python-version }}
-    - name: pin python-version ${{ matrix.python-version }}
+    - name: Pin python-version ${{ matrix.python-version }}
       # if: steps.setup-rye.outputs.cache-hit != 'true'
       run: rye pin ${{ matrix.python-version }}
-    - name: install dependencies
+    - name: Install dependencies
       # if: steps.setup-rye.outputs.cache-hit != 'true'
       run: rye sync --no-lock
-    - name: rye format
+    - name: Rye format
       run: rye fmt --check
-    - name: rye lint
+    - name: Rye lint
       run: rye lint
-    - name: run tests
+    - name: Run tests
       run: |
         echo '```' > pytest.log
         rye test | tee -a pytest.log
