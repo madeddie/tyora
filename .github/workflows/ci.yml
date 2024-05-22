@@ -46,7 +46,7 @@ jobs:
     - name: run tests
       run: |
         echo '```' > pytest.log
-        rye run pytest --cov | tee -a pytest.log
+        pytest --cov | tee -a pytest.log
         echo '```' >> pytest.log
     # Disabled until we get this to work only once in the matrix
     # - name: PR comment pytest output
