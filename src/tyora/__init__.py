@@ -1,19 +1,18 @@
 import argparse
+import json
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from getpass import getpass
-import logging
-import json
-from urllib.parse import urljoin
 from pathlib import Path
 from time import sleep
 from typing import AnyStr, Optional
+from urllib.parse import urljoin
 from xml.etree.ElementTree import Element, tostring
 
-from html2text import html2text
 import htmlement
 import requests
-
+from html2text import html2text
 
 logger = logging.getLogger(name="tyora")
 
