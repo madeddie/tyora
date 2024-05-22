@@ -30,15 +30,14 @@ jobs:
     - uses: eifinger/setup-rye@v3
       id: setup-rye
       with:
-        enable-cache: true
+        enable-cache: false
         cache-prefix: ${{ matrix.python-version }}
     - name: pin python-version ${{ matrix.python-version }}
-      if: steps.setup-rye.outputs.cache-hit != 'true'
+      # if: steps.setup-rye.outputs.cache-hit != 'true'
       run: rye pin ${{ matrix.python-version }}
     - name: install dependencies
-      if: steps.setup-rye.outputs.cache-hit != 'true'
-      run: |
-        rye sync --no-lock
+      # if: steps.setup-rye.outputs.cache-hit != 'true'
+      run: rye sync --no-lock
     - name: rye format
       run: rye fmt --check
     - name: rye lint
@@ -46,7 +45,7 @@ jobs:
     - name: run tests
       run: |
         echo '```' > pytest.log
-        pytest --cov | tee -a pytest.log
+        rye test | tee -a pytest.log
         echo '```' >> pytest.log
     # Disabled until we get this to work only once in the matrix
     # - name: PR comment pytest output
