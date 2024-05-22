@@ -27,7 +27,7 @@ class Session:
 
     def __post_init__(self) -> None:
         self.http_session = requests.Session()
-        self.http_session.cookies = requests.utils.cookiejar_from_dict(self.cookies)  # type: ignore[no-untyped-call]
+        self.http_session.cookies = requests.utils.cookiejar_from_dict(self.cookies)
 
     @property
     def is_logged_in(self) -> bool:
@@ -220,7 +220,7 @@ def write_cookie_file(cookiefile: str, cookies: dict[str, str]) -> None:
         json.dump(cookies, f)
 
 
-def find_link(html: AnyStr, xpath: str) -> dict[str, str | None]:
+def find_link(html: AnyStr, xpath: str) -> dict[str, Optional[str]]:
     """Search for html link by xpath and return dict with href and text"""
     anchor_element = htmlement.fromstring(html).find(xpath)
     link_data = dict()
