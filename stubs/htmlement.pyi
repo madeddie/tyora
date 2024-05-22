@@ -1,5 +1,5 @@
-from html.parser import HTMLParser
 import io
+from html.parser import HTMLParser
 from typing import Optional
 from xml.etree.ElementTree import Element
 

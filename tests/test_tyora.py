@@ -1,6 +1,6 @@
-import tyora
 import pytest
 import requests_mock
+import tyora
 
 
 def test_parse_args_missing_args() -> None:
