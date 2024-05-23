@@ -133,7 +133,7 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     subparsers = parser.add_subparsers(required=True, dest="cmd")
 
     # login subparser
-    parser_login = subparsers.add_parser("login", help="Login to mooc.fi CSES")
+    subparsers.add_parser("login", help="Login to mooc.fi CSES")
 
     # list exercises subparser
     parser_list = subparsers.add_parser("list", help="List exercises")

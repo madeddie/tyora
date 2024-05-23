@@ -1,7 +1,8 @@
 # Tyora: mooc.fi CSES exercise task CLI
+[![PyPI - Version](https://img.shields.io/pypi/v/tyora?pypiBaseUrl=https%3A%2F%2Ftest.pypi.org&logo=pypi&label=pypitest)](https://test.pypi.org/project/tyora/)
+[![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fmadeddie%2Ftyora%2Fmain%2Fpyproject.toml&logo=python)](https://github.com/madeddie/tyora/blob/main/pyproject.toml#L15)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/madeddie/tyora/ci.yml)](https://github.com/madeddie/tyora/actions/workflows/ci.yml)
 [![GitHub License](https://img.shields.io/github/license/madeddie/tyora)](https://github.com/madeddie/tyora/blob/main/LICENSE)
-[![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fmadeddie%2Ftyora%2Fmain%2Fpyproject.toml&logo=python)](https://github.com/madeddie/tyora/blob/main/pyproject.toml#L15)
 
 
 This script interacts with the mooc.fi instance of the CSES (https://cses.fi) website to perform various actions such as logging in, retrieving exercise lists, and submitting solutions.
