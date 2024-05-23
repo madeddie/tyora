@@ -11,3 +11,4 @@ wheels/
 
 # testing files
 .coverage
+pyrightconfig.json
