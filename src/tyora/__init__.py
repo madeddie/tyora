@@ -287,7 +287,7 @@ def parse_task_list(html: AnyStr) -> list[Task]:
 
             item_spans = item.findall("span") or []
             item_span = next(
-                (span for span in item_spans if span.get("class", "") != "detail")
+                (span for span in item_spans if span.get("class", "") != "detail"), None
             )
             if item_span is not None:
                 item_class = item_span.get("class", "")
