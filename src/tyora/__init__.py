@@ -1,4 +1,5 @@
 import argparse
+import importlib.metadata
 import json
 import logging
 from dataclasses import dataclass, field
@@ -15,6 +16,10 @@ import requests
 from html2text import html2text
 
 logger = logging.getLogger(name="tyora")
+try:
+    __version__ = importlib.metadata.version("tyora")
+except importlib.metadata.PackageNotFoundError:
+    __version__ = "unknown"
 
 
 @dataclass
@@ -102,6 +107,9 @@ class Session:
 
 def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Interact with mooc.fi CSES instance")
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
+    )
     parser.add_argument("--username", help="tmc.mooc.fi username")
     parser.add_argument("--password", help="tmc.mooc.fi password")
     parser.add_argument(
