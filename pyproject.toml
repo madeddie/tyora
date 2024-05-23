@@ -1,6 +1,6 @@
 [project]
 name = "tyora"
-version = "0.1.0"
+version = "0.0.1"
 description = "CLI to interact with the mooc.fi instance of CSES"
 license = "MIT"
 authors = [
