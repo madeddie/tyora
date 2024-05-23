@@ -130,15 +130,13 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
         help="Don't store cookies or cache (they're used for faster access on the future runs)",
         action="store_true",
     )
-    subparsers = parser.add_subparsers(required=True)
+    subparsers = parser.add_subparsers(required=True, dest="cmd")
 
     # login subparser
     parser_login = subparsers.add_parser("login", help="Login to mooc.fi CSES")
-    parser_login.set_defaults(cmd="login")
 
     # list exercises subparser
     parser_list = subparsers.add_parser("list", help="List exercises")
-    parser_list.set_defaults(cmd="list")
     parser_list.add_argument(
         "--filter",
         help="List only complete or incomplete tasks (default: all)",
@@ -150,12 +148,10 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
 
     # show exercise subparser
     parser_show = subparsers.add_parser("show", help="Show details of an exercise")
-    parser_show.set_defaults(cmd="show")
     parser_show.add_argument("task_id", help="Numerical task identifier")
 
     # submit exercise solution subparser
     parser_submit = subparsers.add_parser("submit", help="Submit an exercise solution")
-    parser_submit.set_defaults(cmd="submit")
     parser_submit.add_argument(
         "--filename",
         help="Filename of the solution to submit (if not given will be guessed from task description)",
