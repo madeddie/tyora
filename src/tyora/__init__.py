@@ -16,7 +16,10 @@ import requests
 from html2text import html2text
 
 logger = logging.getLogger(name="tyora")
-__version__ = importlib.metadata.version("tyora")
+try:
+    __version__ = importlib.metadata.version("tyora")
+except importlib.metadata.PackageNotFoundError:
+    __version__ = "unknown"
 
 
 @dataclass
