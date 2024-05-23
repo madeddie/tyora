@@ -16,49 +16,18 @@ It provides a convenient way to view and submit tasks.
 
 ## Installation
 
-1. Clone the repository to your local machine:
-
    ```bash
-   git clone https://github.com/madeddie/tyora.git
-   ```
-
-2. Navigate to the project directory:
-
-   ```bash
-   cd tyora
-   ```
-
-3. Install the required dependencies:
-
-   ```bash
-   pip install -r requirements.txt
+   pip install tyora
    ```
 
 ## Usage
 
-1. Configure the script by running:
+The script can be used from the command line. The following commands are available:
 
-   ```bash
-   python tyora.py configure
-   ```
-
-   Follow the prompts to enter your mooc.fi username and password. This information will be stored for future use.
-
-2. List available exercises:
-
-   ```bash
-   python tyora.py list
-   ```
-
-   This will retrieve and display a list of exercises available on the CSES platform.
-
-3. Submit a solution:
-
-   ```bash
-   python tyora.py submit <exercise_id> <path_to_solution_file>
-   ```
-
-   Replace `<exercise_id>` with the ID of the exercise you want to submit a solution for, and `<path_to_solution_file>` with the path to your solution file.
+- `tyora login`: Stores your mooc.fi username and password and tests if we can log in with them.
+- `tyora list`: Retrieves and displays a list of exercises available on the CSES platform.
+- `tyora show <exercise_id>`: Displays the details of a specific exercise.
+- `tyora submit <exercise_id> <path_to_solution_file>`: Submits a solution to a specific exercise.
 
 ## Origin of name
 
