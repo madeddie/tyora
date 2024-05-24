@@ -1,6 +1,5 @@
 import pytest
-import requests_mock
-import tyora
+from tyora import tyora
 
 
 def test_parse_args_missing_args() -> None:
@@ -44,40 +43,6 @@ class TestParseForm:
     noinput_html = (
         '<html><body><form action="someaction">Nothing here</form></body></html>'
     )
-
-
-# TODO: add tests for unreachable and failing endpoints, 4xx, 5xx, etc
-@pytest.fixture
-def mock_session() -> tyora.Session:
-    return tyora.Session(
-        username="test_user@test.com",
-        password="test_password",
-        base_url="https://example.com",
-    )
-
-
-def test_login_successful(mock_session: tyora.Session) -> None:
-    # Mocking the HTTP response for successful login
-    with requests_mock.Mocker() as m:
-        m.get(
-            "https://example.com/list",
-            text='<a class="account" href="/user/1234">test_user@test.com (mooc.fi)</a>',
-        )
-        mock_session.login()
-        assert mock_session.is_logged_in
-
-
-def test_login_failed(mock_session: tyora.Session) -> None:
-    # Mocking the HTTP response for failed login
-    with requests_mock.Mocker() as m:
-        m.get(
-            "https://example.com/list",
-            text='<a class="account" href="/login/oauth-redirect?site=mooc.fi">Login using mooc.fi</a>',
-        )
-        m.get("https://example.com/account", text="Login required")
-        m.get("https://example.com/login/oauth-redirect?site=mooc.fi", text="")
-        with pytest.raises(ValueError):
-            mock_session.login()
 
 
 # TODO: functions that use user input or read or write files

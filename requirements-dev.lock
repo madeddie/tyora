@@ -25,7 +25,7 @@ filelock==3.14.0
     # via virtualenv
 html2text==2024.2.26
     # via tyora
-htmlement==2.0.0
+html5lib==1.1
     # via tyora
 identify==2.5.36
     # via pre-commit
@@ -38,6 +38,7 @@ nodeenv==1.8.0
 packaging==24.0
     # via pytest
 platformdirs==4.2.2
+    # via tyora
     # via virtualenv
 pluggy==1.5.0
     # via pytest
@@ -49,10 +50,15 @@ pyyaml==6.0.1
     # via pre-commit
 requests==2.32.1
     # via requests-mock
+    # via requests-toolbelt
     # via tyora
 requests-mock==1.12.1
+requests-toolbelt==1.0.0
+    # via tyora
 setuptools==70.0.0
     # via nodeenv
+six==1.16.0
+    # via html5lib
 tomli==2.0.1
     # via coverage
     # via pytest
@@ -60,3 +66,5 @@ urllib3==2.2.1
     # via requests
 virtualenv==20.26.2
     # via pre-commit
+webencodings==0.5.1
+    # via html5lib
