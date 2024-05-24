@@ -8,10 +8,10 @@ authors = [
 ]
 dependencies = [
     "html2text>=2024.2.26",
-    "requests>=2.32.1",
-    "requests-toolbelt>=1.0.0",
     "html5lib>=1.1",
     "platformdirs>=4.2.2",
+    "requests>=2.32.1",
+    "requests-toolbelt>=1.0.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.9"
@@ -44,11 +44,10 @@ build-backend = "hatchling.build"
 [tool.rye]
 managed = true
 dev-dependencies = [
-    "pytest>=8.2.1",
-    "requests-mock>=1.12.1",
-    "pytest-cov>=5.0.0",
     "pre-commit>=3.7.1",
-    "ipython>=8.18.1",
+    "pytest>=8.2.1",
+    "pytest-cov>=5.0.0",
+    "requests-mock>=1.12.1",
 ]
 
 [tool.hatch.metadata]
