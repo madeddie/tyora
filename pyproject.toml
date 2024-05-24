@@ -1,6 +1,6 @@
 [project]
 name = "tyora"
-version = "0.0.1"
+version = "0.0.2"
 description = "CLI to interact with the mooc.fi instance of CSES"
 license = "MIT"
 authors = [
@@ -8,14 +8,34 @@ authors = [
 ]
 dependencies = [
     "html2text>=2024.2.26",
-    "htmlement>=2.0.0",
     "requests>=2.32.1",
+    "requests-toolbelt>=1.0.0",
+    "html5lib>=1.1",
+    "platformdirs>=4.2.2",
 ]
 readme = "README.md"
 requires-python = ">= 3.9"
+keywords = ["mooc.fi", "cses", "cli", "tira.mooc.fi", "dsa", "data structures and algorithms"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/madeddie/tyora/"
 
 [project.scripts]
-"tyora" = "tyora:main"
+"tyora" = "tyora.tyora:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -28,6 +48,7 @@ dev-dependencies = [
     "requests-mock>=1.12.1",
     "pytest-cov>=5.0.0",
     "pre-commit>=3.7.1",
+    "ipython>=8.18.1",
 ]
 
 [tool.hatch.metadata]

@@ -15,11 +15,20 @@ charset-normalizer==3.3.2
     # via requests
 html2text==2024.2.26
     # via tyora
-htmlement==2.0.0
+html5lib==1.1
     # via tyora
 idna==3.7
     # via requests
-requests==2.32.1
+platformdirs==4.2.2
     # via tyora
+requests==2.32.1
+    # via requests-toolbelt
+    # via tyora
+requests-toolbelt==1.0.0
+    # via tyora
+six==1.16.0
+    # via html5lib
 urllib3==2.2.1
     # via requests
+webencodings==0.5.1
+    # via html5lib

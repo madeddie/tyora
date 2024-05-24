@@ -9,6 +9,8 @@
 #   generate-hashes: false
 
 -e file:.
+asttokens==2.4.1
+    # via stack-data
 certifi==2024.2.2
     # via requests
 cfgv==3.4.0
@@ -17,15 +19,20 @@ charset-normalizer==3.3.2
     # via requests
 coverage==7.5.1
     # via pytest-cov
+decorator==5.1.1
+    # via ipython
 distlib==0.3.8
     # via virtualenv
 exceptiongroup==1.2.1
+    # via ipython
     # via pytest
+executing==2.0.1
+    # via stack-data
 filelock==3.14.0
     # via virtualenv
 html2text==2024.2.26
     # via tyora
-htmlement==2.0.0
+html5lib==1.1
     # via tyora
 identify==2.5.36
     # via pre-commit
@@ -33,15 +40,33 @@ idna==3.7
     # via requests
 iniconfig==2.0.0
     # via pytest
+ipython==8.18.1
+jedi==0.19.1
+    # via ipython
+matplotlib-inline==0.1.7
+    # via ipython
 nodeenv==1.8.0
     # via pre-commit
 packaging==24.0
     # via pytest
+parso==0.8.4
+    # via jedi
+pexpect==4.9.0
+    # via ipython
 platformdirs==4.2.2
+    # via tyora
     # via virtualenv
 pluggy==1.5.0
     # via pytest
 pre-commit==3.7.1
+prompt-toolkit==3.0.43
+    # via ipython
+ptyprocess==0.7.0
+    # via pexpect
+pure-eval==0.2.2
+    # via stack-data
+pygments==2.18.0
+    # via ipython
 pytest==8.2.1
     # via pytest-cov
 pytest-cov==5.0.0
@@ -49,14 +74,31 @@ pyyaml==6.0.1
     # via pre-commit
 requests==2.32.1
     # via requests-mock
+    # via requests-toolbelt
     # via tyora
 requests-mock==1.12.1
+requests-toolbelt==1.0.0
+    # via tyora
 setuptools==70.0.0
     # via nodeenv
+six==1.16.0
+    # via asttokens
+    # via html5lib
+stack-data==0.6.3
+    # via ipython
 tomli==2.0.1
     # via coverage
     # via pytest
+traitlets==5.14.3
+    # via ipython
+    # via matplotlib-inline
+typing-extensions==4.12.0
+    # via ipython
 urllib3==2.2.1
     # via requests
 virtualenv==20.26.2
     # via pre-commit
+wcwidth==0.2.13
+    # via prompt-toolkit
+webencodings==0.5.1
+    # via html5lib

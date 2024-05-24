@@ -12,3 +12,4 @@ wheels/
 # testing files
 .coverage
 pyrightconfig.json
+.envrc
