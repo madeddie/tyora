@@ -54,7 +54,7 @@ dev-dependencies = [
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/tyora"]
+packages = ["tyora"]
 
 [tool.pytest.ini_options]
 addopts = "--cov"
