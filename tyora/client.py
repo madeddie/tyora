@@ -54,7 +54,7 @@ class Client:
         return task
 
     def submit_task(
-        self, task_id: str, submission: bytes, filename: Optional[str]
+        self, task_id: str, submission: AnyStr, filename: Optional[str]
     ) -> str:
         task = self.get_task(task_id)
         if not task.submit_file and not filename:
@@ -74,7 +74,6 @@ class Client:
         submit_form_data["file"] = (submit_file, submission)
         submit_form_data["lang"] = (None, "Python3")
         submit_form_data["option"] = (None, "CPython3")
-
         res = self.session.post(
             urljoin(self.session.base_url, action), files=submit_form_data
         )
@@ -184,6 +183,8 @@ def parse_task(html: AnyStr) -> Task:
 #         with open(filename, 'r') as f:
 
 
+# TODO test with failing results
+# Seems to be broken since the switch to html5lib, needs tests!
 def parse_submit_result(html: AnyStr) -> dict[str, str]:
     root = html5lib.parse(html, namespaceHTMLElements=False)
     submit_status_element = root.find('.//td[.="Status:"]/..') or Element("td")

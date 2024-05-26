@@ -7,7 +7,6 @@ from getpass import getpass
 from pathlib import Path
 from time import sleep
 from typing import Optional
-from urllib.parse import urljoin
 
 import platformdirs
 
@@ -16,11 +15,8 @@ from .client import (
     Task,
     TaskState,
     parse_submit_result,
-    parse_task,
-    parse_task_list,
 )
 from .session import MoocfiCsesSession as Session
-from .utils import parse_form
 
 logger = logging.getLogger(name="tyora")
 try:
@@ -230,7 +226,7 @@ def main() -> None:
     if args.cmd == "submit":
         # TODO allow user to paste the code in or even pipe it in
         with open(args.filename, "rb") as f:
-            submission_code = (f.read(),)
+            submission_code = f.read()
 
         result_url = client.submit_task(
             task_id=args.task_id,
@@ -241,6 +237,7 @@ def main() -> None:
         while True:
             print(".", end="")
             res = session.get(result_url)
+            print(res.text)
             res.raise_for_status()
             if "Test report" in res.text:
                 break
