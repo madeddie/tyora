@@ -210,9 +210,9 @@ def main() -> None:
         base_url=base_url,
         cookies=cookies,
     )
-
+    # TODO: make logging in optional for list and show commands
+    session.login(username=config["username"], password=config["password"])
     client = Client(session)
-    client.login(username=config["username"], password=config["password"])
 
     if not args.no_state and cookiefile:
         cookies = session.cookies.get_dict()

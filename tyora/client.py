@@ -36,9 +36,6 @@ class Client:
     def __init__(self, session: Session) -> None:
         self.session = session
 
-    def login(self, username: str, password: str) -> None:
-        self.session.login(username, password)
-
     def get_task_list(self) -> list[Task]:
         res = self.session.get(urljoin(self.session.base_url, "list"))
         res.raise_for_status()
