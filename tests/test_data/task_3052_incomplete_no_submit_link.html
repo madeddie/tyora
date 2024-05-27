@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet " type="text/css" href="/cses.css?13" id="styles">
+  <link rel="stylesheet alternate" type="text/css" href="/cses-dark.css?13" id="styles-dark">
+  <meta name="theme-color" content="white" id="theme-color">
+  <script type="application/json" id="darkmode-enabled">false</script>
+  <script src="/ui.js"></script>
+  <link rel="stylesheet" type="text/css" href="/lib/fontawesome/css/all.min.css">
+</head>
+<body class="with-sidebar ">
+  <div class="header">
+    <div>
+      <a href="/" class="logo"><img src="/logo.png?1" alt="CSES"></a>
+      <a class="menu-toggle" onclick="document.body.classList.toggle('menu-open');">
+        <i class="fas fa-bars"></i>
+      </a>
+      <div class="controls">
+                <a class="account" href="/user/0000">test_user@test.com (mooc.fi)</a>
+        <span>&mdash;</span>
+                        <a href="/darkmode" title="Toggle dark mode" onclick="return toggle_theme()"><i aria-label="Dark mode" class="fas fa-adjust"></i><span>Dark mode</span></a>
+                <a href="/logout" title="Log out"><i aria-label="Log out" class="fas fa-sign-out-alt"></i><span>Log out</span></a>
+              </div>
+    </div>
+  </div>
+  <div class="skeleton">
+
+  <div class="navigation">
+    <div class="title-block">
+      <h3><a href="/dsa24k/list/">Data Structures and Algorithms spring 2024</a></h3>
+      <h1>Efficiency test</h1>
+<ul class="nav">
+<li><a href="/dsa24k/task/3052/" class="current">Task</a></li>
+</ul>
+    </div>
+    <div class="sidebar"></div>
+  </div>
+
+  <div class="content-wrapper">
+
+    <div class="content">
+
+
+<title>CSES - Efficiency test</title><link rel="stylesheet" href="/lib/katex/katex.min.css">
+<script defer src="/lib/katex/katex.min.js"></script>
+<script defer src="/lib/katex/contrib/copy-tex.min.js"></script>
+<script defer src="/lib/google-code-prettify/run_prettify.js"></script>
+<script>
+addEventListener("DOMContentLoaded", function (e) {
+    const mathElements = document.getElementsByClassName("math");
+    const macros = {};
+    for (let element of mathElements) {
+        katex.render(element.textContent, element, {
+            displayMode: element.classList.contains("display"),
+            throwOnError: false,
+            globalGroup: true,
+            macros,
+        });
+    }
+});
+</script>
+<form action="/course/quiz_send.php" method="post" >
+<input type="hidden" name="csrf_token" value="0be333b243bea4023a3b672bc1428edd">
+<input type="hidden" name="course" value="dsa24k">
+<input type="hidden" name="task" value="3052">
+<div class="md"><p>The course material includes two different ways to implement the function <code>count_even</code>:</p>
+<pre class="resize-horizontal prettyprint lang-auto"># implementation 1
+def count_even(numbers):
+    result = 0
+    for x in numbers:
+        if x % 2 == 0:
+            result += 1
+    return result
+</pre><pre class="resize-horizontal prettyprint lang-auto"># implementation 2
+def count_even(numbers):
+    return sum(x % 2 == 0 for x in numbers)
+</pre>
+<p>Compare the efficiencies of the two implementations using a list that contains <span class="math inline">10^7</span> randomly chosen numbers.</p>
+<p>In this exercise, you get a point automatically when you submit the test results and the code that you used.</p>
+<p>Implementation 1 run time: <input name="input[]" type="text" size=8 required> s</p>
+<p>Implementation 2 run time: <input name="input[]" type="text" size=8 required> s</p>
+<p>The code you used in the test:<br />
+<textarea name="text[]" rows=10 cols=80 required></textarea></p>
+</div><p><input type="submit" value="Submit answers"></p></form>
+<script>
+var inputs = document.forms[0].elements;
+for (var i = 0; i < inputs.length; i++) {
+    let input = inputs[i];
+    if (input.nodeName == "INPUT" && input.type == "text") {
+        input.addEventListener("input", function (event) {
+            if (input.validity.patternMismatch) {
+                input.setCustomValidity("This answer is not correct.");
+            } else if (input.validity.valueMissing) {
+                input.setCustomValidity("Please fill out this field.");
+            } else {
+                input.setCustomValidity("");
+            }
+        });
+    }
+}
+</script>
+    </div>
+    <div class="nav sidebar">
+<h4>Week 1</h4><a  href="/dsa24k/task/3055">Candies<span class="task-score icon full"></span></a><a  href="/dsa24k/task/3049">Inversions<span class="task-score icon full"></span></a><a  href="/dsa24k/task/3054">Same bits<span class="task-score icon full"></span></a><a  href="/dsa24k/task/2643">Repeat<span class="task-score icon "></span></a><a class="current" href="/dsa24k/task/3052">Efficiency test<span class="task-score icon "></span></a><a  href="/dsa24k/task/3248">Sequence of numbers<span class="task-score icon "></span></a><a  href="/dsa24k/task/3051">Time complexities<span class="task-score icon "></span></a><a  href="/dsa24k/task/2821">Rectangles<span class="task-score icon "></span></a><hr />    <h4>Your submissions</h4>
+
+    </div>
+</div>
