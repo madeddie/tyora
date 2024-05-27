@@ -56,9 +56,9 @@ class Client:
     ) -> str:
         task = self.get_task(task_id)
         if not task.submit_file and not filename:
-            raise ValueError("No submission filename found")
+            raise ValueError("No submission filename found for task ID: " + task_id)
         if not task.submit_link:
-            raise ValueError("No submit link found")
+            raise ValueError("No submit link found for task ID: " + task_id)
         submit_file = task.submit_file or filename
 
         res = self.session.get(urljoin(self.session.base_url, task.submit_link))
@@ -77,7 +77,6 @@ class Client:
             files=submit_form_data,  # type: ignore[arg-type]
         )
         res.raise_for_status()
-
         return res.url
 
 
