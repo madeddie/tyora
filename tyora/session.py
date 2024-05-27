@@ -67,8 +67,7 @@ class MoocfiCsesSession(requests.Session):
         res = self.get(login_url, headers={"referer": res.url})
         login_form = parse_form(res.text, ".//form")
         if login_form:
-            action = login_form.get("_action")
-            _ = login_form.pop("_action")
+            action = login_form.pop("_action")
         else:
             logger.debug(
                 f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}"
