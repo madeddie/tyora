@@ -58,3 +58,6 @@ packages = ["tyora"]
 
 [tool.pytest.ini_options]
 addopts = "--cov"
+
+[tool.ruff.lint]
+extend-select = ["I"]
