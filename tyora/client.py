@@ -1,7 +1,8 @@
-import logging
+from __future__ import annotations
 
-from enum import Enum
+import logging
 from dataclasses import dataclass
+from enum import Enum
 from typing import AnyStr, Optional
 from urllib.parse import urljoin
 from xml.etree.ElementTree import Element, tostring
@@ -54,7 +55,7 @@ class Client:
         return task
 
     def submit_task(
-        self, task_id: str, submission: AnyStr, filename: Optional[str]
+        self, task_id: str, submission: str, filename: Optional[str]
     ) -> str:
         task = self.get_task(task_id)
         if not task.submit_file and not filename:
@@ -68,14 +69,15 @@ class Client:
         parsed_form_data = parse_form(res.text)
         action = parsed_form_data.pop("_action")
 
-        submit_form_data = dict()
+        submit_form_data: dict[str, tuple[Optional[str], Optional[str]]] = dict()
         for key, value in parsed_form_data.items():
             submit_form_data[key] = (None, value)
         submit_form_data["file"] = (submit_file, submission)
         submit_form_data["lang"] = (None, "Python3")
         submit_form_data["option"] = (None, "CPython3")
         res = self.session.post(
-            urljoin(self.session.base_url, action), files=submit_form_data
+            urljoin(self.session.base_url, action),
+            files=submit_form_data,  # type: ignore[arg-type]
         )
         res.raise_for_status()
 
@@ -84,10 +86,10 @@ class Client:
 
 def parse_task_list(html: AnyStr) -> list[Task]:
     """Parse html to find tasks and their status, returns list of Task objects"""
-    root = html5lib.parse(html, namespaceHTMLElements=False)
+    root = html5lib.parse(html, namespaceHTMLElements=False)  # type: ignore[reportUnknownMemberType]
     task_element_list = root.findall('.//li[@class="task"]')
 
-    task_list = list()
+    task_list: list[Task] = list()
     for task_element in task_element_list:
         task_id = None
         task_name = None
@@ -108,10 +110,9 @@ def parse_task_list(html: AnyStr) -> list[Task]:
 
         task_element_span = next(
             (span for span in task_element_spans if span.get("class", "") != "detail"),
-            None,
+            Element("span"),
         )
-        if task_element_span is not None:
-            task_element_class = task_element_span.get("class") or ""
+        task_element_class = task_element_span.get("class") or ""
 
         task_state = (
             TaskState.COMPLETE if "full" in task_element_class else TaskState.INCOMPLETE
@@ -128,7 +129,7 @@ def parse_task_list(html: AnyStr) -> list[Task]:
 
 
 def parse_task(html: AnyStr) -> Task:
-    root = html5lib.parse(html, namespaceHTMLElements=False)
+    root = html5lib.parse(html, namespaceHTMLElements=False)  # type: ignore[reportUnknownMemberType]
     task_link_element = root.find('.//div[@class="nav sidebar"]/a')
     task_link = task_link_element if task_link_element is not None else Element("a")
     task_id = task_link.get("href", "").split("/")[-1]
@@ -186,7 +187,7 @@ def parse_task(html: AnyStr) -> Task:
 # TODO test with failing results
 # Seems to be broken since the switch to html5lib, needs tests!
 def parse_submit_result(html: AnyStr) -> dict[str, str]:
-    root = html5lib.parse(html, namespaceHTMLElements=False)
+    root = html5lib.parse(html, namespaceHTMLElements=False)  # type: ignore[reportUnknownMemberType]
     submit_status_element = root.find('.//td[.="Status:"]/..') or Element("td")
     submit_status_span_element = submit_status_element.find("td/span") or Element(
         "span"

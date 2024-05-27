@@ -113,7 +113,7 @@ def write_config(configfile: str, config: dict[str, str]) -> None:
 
 
 def read_config(configfile: str) -> dict[str, str]:
-    config = dict()
+    config: dict[str, str] = dict()
     file_path = Path(configfile).expanduser()
     with open(file_path, "r") as f:
         config = json.load(f)
@@ -134,7 +134,8 @@ def read_cookie_file(cookiefile: str) -> dict[str, str]:
     """
     try:
         with open(cookiefile, "r") as f:
-            return json.load(f)
+            cookies: dict[str, str] = json.load(f)
+            return cookies
     except (FileNotFoundError, json.decoder.JSONDecodeError) as e:
         logger.debug(f"Error reading cookies from {cookiefile}: {e}")
     return {}
@@ -198,7 +199,7 @@ def main() -> None:
     base_url = f"https://cses.fi/{config['course']}/"
 
     cookiefile = None
-    cookies = dict()
+    cookies: dict[str, str] = dict()
     if not args.no_state:
         if not STATE_DIR.exists():
             STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -225,7 +226,7 @@ def main() -> None:
 
     if args.cmd == "submit":
         # TODO allow user to paste the code in or even pipe it in
-        with open(args.filename, "rb") as f:
+        with open(args.filename, "r") as f:
             submission_code = f.read()
 
         result_url = client.submit_task(

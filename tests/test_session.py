@@ -1,5 +1,6 @@
 import pytest
 import requests_mock
+
 from tyora.session import MoocfiCsesSession as Session
 
 test_cookies = {"cookie_a": "value_a", "cookie_b": "value_b"}

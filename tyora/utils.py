@@ -9,7 +9,7 @@ def find_link(html: AnyStr, xpath: str) -> dict[str, Optional[str]]:
     if anchor_element is None:
         return dict()
 
-    link_data = dict()
+    link_data: dict[str, Optional[str]] = dict()
     link_data["href"] = anchor_element.get("href")
     link_data["text"] = anchor_element.text
 
@@ -22,7 +22,7 @@ def parse_form(html: AnyStr, xpath: str = ".//form") -> dict[str, Optional[str]]
     if form_element is None:
         return dict()
 
-    form_data = dict()
+    form_data: dict[str, Optional[str]] = dict()
     form_data["_action"] = form_element.get("action")
     for form_input in form_element.iter("input"):
         form_key = form_input.get("name") or ""

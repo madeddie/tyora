@@ -1,10 +1,11 @@
 import pytest
+
 from tyora import tyora
 
 
 def test_parse_args_missing_args() -> None:
     with pytest.raises(SystemExit):
-        tyora.parse_args()
+        _ = tyora.parse_args()
 
 
 def test_parse_args_command() -> None:

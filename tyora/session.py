@@ -19,7 +19,9 @@ except importlib.metadata.PackageNotFoundError:
 
 
 class MoocfiCsesSession(requests.Session):
-    def __init__(self, base_url: str, cookies: Optional[dict] = None, *args, **kwargs):
+    def __init__(
+        self, base_url: str, cookies: Optional[dict[str, str]] = None, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
         self.base_url = base_url
@@ -66,7 +68,7 @@ class MoocfiCsesSession(requests.Session):
         login_form = parse_form(res.text, ".//form")
         if login_form:
             action = login_form.get("_action")
-            login_form.pop("_action")
+            _ = login_form.pop("_action")
         else:
             logger.debug(
                 f"url: {res.url}, status: {res.status_code}\nhtml:\n{res.text}"
@@ -76,7 +78,7 @@ class MoocfiCsesSession(requests.Session):
         login_form["session[login]"] = username
         login_form["session[password]"] = password
 
-        self.post(
+        _ = self.post(
             url=urljoin(res.url, action),
             headers={"referer": res.url},
             data=login_form,

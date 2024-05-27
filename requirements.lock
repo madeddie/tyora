@@ -21,7 +21,7 @@ idna==3.7
     # via requests
 platformdirs==4.2.2
     # via tyora
-requests==2.32.1
+requests==2.32.2
     # via requests-toolbelt
     # via tyora
 requests-toolbelt==1.0.0
