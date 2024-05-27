@@ -126,7 +126,7 @@ def parse_task_list(html: AnyStr) -> list[Task]:
 
 def parse_task(html: AnyStr) -> Task:
     root = html5lib.parse(html, namespaceHTMLElements=False)  # type: ignore[reportUnknownMemberType]
-    task_link_element = root.find('.//div[@class="nav sidebar"]/a')
+    task_link_element = root.find('.//div[@class="nav sidebar"]/a[@class="current"]')
     task_link = task_link_element if task_link_element is not None else Element("a")
     task_id = task_link.get("href", "").split("/")[-1]
     if not task_id:
