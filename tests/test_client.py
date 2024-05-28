@@ -89,11 +89,19 @@ def test_client_submit_task(mock_session: Session) -> None:
     client = Client(session=mock_session)
 
     with requests_mock.Mocker() as m:
+        m.get(
+            "https://example.com/dsa24k/submit/3055/",
+            text=open("tests/test_data/submit_3055_form.html").read(),
+        )
         m.post(
-            "https://example.com/submit/3055",
-            text=open("tests/test_data/submit_3055_success.html").read(),
+            "https://example.com/course/send.php",
+            headers={"location": "/dsa24k/result/0000/"},
+        )
+        m.get(
+            "https://example.com/task/3055",
+            text=open("tests/test_data/task_3055_complete.html").read(),
         )
         result = client.submit_task(
             "3055", "print('Hello, World!')\n", filename="test.py"
         )
-    assert result == "Success"
+    assert result == "https://example.com/course/send.php"

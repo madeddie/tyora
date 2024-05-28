@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet " type="text/css" href="/cses.css?13" id="styles">
+  <link rel="stylesheet alternate" type="text/css" href="/cses-dark.css?13" id="styles-dark">
+  <meta name="theme-color" content="white" id="theme-color">
+  <script type="application/json" id="darkmode-enabled">false</script>
+  <script src="/ui.js"></script>
+  <link rel="stylesheet" type="text/css" href="/lib/fontawesome/css/all.min.css">
+</head>
+<body class="with-sidebar ">
+  <div class="header">
+    <div>
+      <a href="/" class="logo"><img src="/logo.png?1" alt="CSES"></a>
+      <a class="menu-toggle" onclick="document.body.classList.toggle('menu-open');">
+        <i class="fas fa-bars"></i>
+      </a>
+      <div class="controls">
+                <a class="account" href="/user/0000">test_user@test.com (mooc.fi)</a>
+        <span>&mdash;</span>
+                        <a href="/darkmode" title="Toggle dark mode" onclick="return toggle_theme()"><i aria-label="Dark mode" class="fas fa-adjust"></i><span>Dark mode</span></a>
+                <a href="/logout" title="Log out"><i aria-label="Log out" class="fas fa-sign-out-alt"></i><span>Log out</span></a>
+              </div>
+    </div>
+  </div>
+  <div class="skeleton">
+
+  <div class="navigation">
+    <div class="title-block">
+      <h3><a href="/dsa24k/list/">Data Structures and Algorithms spring 2024</a></h3>
+      <h1>Candies</h1>
+<ul class="nav">
+<li><a href="/dsa24k/task/3055/" >Task</a></li>
+<li><a href="/dsa24k/submit/3055/" class="current">Submit</a></li>
+<li><a href="/dsa24k/view/3055/" >Results</a></li>
+<li><a href="/dsa24k/model/3055/" >Analysis</a></li>
+</ul>
+    </div>
+    <div class="sidebar"></div>
+  </div>
+
+  <div class="content-wrapper">
+
+    <div class="content">
+
+
+<title>CSES - Candies - Submit</title>The deadline for this task has passed, but you can still submit.<form action="/course/send.php" method="post" enctype="multipart/form-data">
+<input type="hidden" name="csrf_token" value="csrftokenstuffhererandomrandombleep">
+<script>
+function check(file) {
+    var lang = document.getElementById("lang");
+    if (file.value.match(/.asm$/)) lang.value = "Assembly"
+    if (file.value.match(/.cpp$/)) lang.value = "C++"
+    if (file.value.match(/.hs$/)) lang.value = "Haskell"
+    if (file.value.match(/.java$/)) lang.value = "Java"
+    if (file.value.match(/.zip$/)) lang.value = "Make"
+    if (file.value.match(/.js$/)) lang.value = "Node.js"
+    if (file.value.match(/.pas$/)) lang.value = "Pascal"
+    if (file.value.match(/.py$/)) lang.value = "Python2"
+    if (file.value.match(/.py$/)) lang.value = "Python3"
+    if (file.value.match(/.rb$/)) lang.value = "Ruby"
+    if (file.value.match(/.rs$/)) lang.value = "Rust"
+    if (file.value.match(/.scala$/)) lang.value = "Scala"
+    if (!file.value.match(/(candies.py)$/)) alert("Invalid file name (please check the problem statement)");
+    if (file.value.match(/.cc$/)) lang.value = "C++";
+    if (file.value.match(/.java$/)) {
+        var reader = new FileReader();
+        reader.onloadend = function() {
+            if (reader.result.match(/^package\s/m)) {
+                alert("Warning: don''package' in your code");
+            }
+        };
+        reader.readAsBinaryString(file.files[0]);
+    }
+    if (file.value.match(/.py$/)) {
+        lang.value = "Python2";
+        var reader = new FileReader();
+        reader.onloadend = function() {
+            if (!reader.result.match(/python2|raw_input|print\s+[^(]/)) {
+                lang.value = "Python3";
+                checkSelects();
+            }
+        };
+        reader.readAsBinaryString(file.files[0]);
+     }
+     checkSelects();
+}
+var type = [];
+type[3055] = 5;
+type[3049] = 5;
+type[3054] = 5;
+type[2643] = 5;
+type[3052] = 6;
+type[3248] = 5;
+type[3051] = 6;
+type[2821] = 5;
+type[3042] = 6;
+type[3043] = 6;
+type[3047] = 5;
+type[3044] = 5;
+type[3048] = 5;
+type[3045] = 5;
+type[3046] = 5;
+type[3050] = 5;
+type[3062] = 5;
+type[3065] = 5;
+type[3066] = 5;
+type[3069] = 5;
+type[3063] = 5;
+type[3255] = 5;
+type[3256] = 5;
+type[3257] = 5;
+type[3074] = 5;
+type[3070] = 5;
+type[3071] = 5;
+type[3072] = 5;
+type[3258] = 5;
+type[3260] = 5;
+type[3259] = 5;
+type[3077] = 5;
+type[3080] = 5;
+type[3081] = 5;
+type[3261] = 6;
+type[3264] = 6;
+type[3082] = 5;
+type[3263] = 5;
+type[3083] = 5;
+type[3085] = 5;
+type[3086] = 5;
+type[3087] = 5;
+type[3088] = 5;
+type[3089] = 5;
+type[3090] = 5;
+type[3092] = 5;
+type[3091] = 5;
+type[3265] = 5;
+type[3266] = 5;
+type[3267] = 5;
+type[3268] = 5;
+type[3269] = 5;
+type[3270] = 5;
+type[3271] = 5;
+type[3272] = 5;
+type[3103] = 5;
+type[3279] = 6;
+type[2905] = 6;
+type[3275] = 5;
+type[3276] = 5;
+type[2908] = 5;
+type[2909] = 5;
+type[3277] = 5;
+type[2911] = 5;
+type[3122] = 5;
+type[3120] = 5;
+type[3118] = 5;
+type[3121] = 5;
+type[3119] = 5;
+type[3116] = 5;
+type[3115] = 5;
+type[3117] = 5;
+type[3309] = 5;
+type[3126] = 5;
+type[3136] = 6;
+type[3127] = 5;
+type[3315] = 6;
+type[3310] = 5;
+type[3313] = 5;
+type[3137] = 5;
+type[3145] = 5;
+type[3148] = 6;
+type[3142] = 5;
+type[2539] = 6;
+type[3143] = 5;
+type[3146] = 5;
+type[3144] = 5;
+type[3147] = 5;
+type[3167] = 5;
+type[3165] = 5;
+type[3166] = 6;
+type[3168] = 5;
+type[3170] = 5;
+type[3171] = 5;
+type[3172] = 5;
+type[3173] = 5;
+type[2920] = 6;
+type[2921] = 6;
+type[3184] = 5;
+type[3189] = 6;
+type[3186] = 5;
+type[3185] = 5;
+type[3187] = 5;
+type[3188] = 5;
+type[3176] = 6;
+type[3177] = 6;
+type[3178] = 5;
+type[3182] = 5;
+type[3179] = 5;
+type[3183] = 5;
+type[3180] = 5;
+type[3181] = 5;
+type[2928] = 6;
+type[2929] = 6;
+type[3196] = 5;
+type[3197] = 5;
+type[3198] = 5;
+type[3199] = 5;
+type[3200] = 5;
+type[3201] = 5;
+type[3323] = 6;
+type[3204] = 6;
+type[3205] = 5;
+type[3206] = 5;
+type[3207] = 5;
+type[3208] = 5;
+type[3209] = 5;
+type[3210] = 5;
+var options = {"C++":["C++11","C++17","C++20"],"Python2":["CPython2","PyPy2"],"Python3":["CPython3","PyPy3"]}
+var defaults = {"Python3":"CPython3"}
+
+var optionsPopulated = null;
+function checkSelects() {
+    var option = document.getElementById("option");
+    var task = document.getElementById("task");
+    var lang = document.getElementById("lang");
+    if (task) lang.disabled = type[task.value] == 1;
+    if (!lang.disabled && lang.value in options) {
+        if (optionsPopulated != lang.value) {
+            option.innerHTML = null;
+            var list = options[lang.value];
+            for (var i = 0; i < list.length; i++) {
+                var o = document.createElement("option");
+                o.text = o.value = list[i];
+                option.add(o);
+            }
+            option.selectedIndex = 0;
+            if (defaults[lang.value]) option.value = defaults[lang.value];
+            optionsPopulated = lang.value;
+        }
+        optionInput.style.removeProperty('display');
+        option.disabled = false;
+    } else {
+        optionInput.style.display = "none";
+        option.disabled = true;
+    }
+}
+
+window.addEventListener("load", function() {
+    var task = document.getElementById("task");
+    if (task) task.addEventListener("change", checkSelects);
+    document.getElementById("lang").addEventListener("change", checkSelects);
+}, false);
+</script>
+<p>Task:
+Candies<input type="hidden" name="task" value="3055">
+</p>
+<p>Code:
+<input type="file" name="file" onchange="check(this)">
+</p>
+<p>Language:
+<select name="lang" id="lang">
+<option value="">?
+<option value="Python3">Python3</select>
+<span id="optionInput" style="display: none;">
+Option:
+<select name="option" id="option">
+</select>
+</span>
+</p>
+
+<p><input type="submit" value="Submit"></p>
+<input type="hidden" name="type" value="course">
+<input type="hidden" name="target" value="dsa24k">
+</form>
+<script> checkSelects(); </script>
+    </div>
+    <div class="nav sidebar">
+<h4>Week 1</h4><a class="current" href="/dsa24k/task/3055">Candies<span class="task-score icon full"></span></a><a  href="/dsa24k/task/3049">Inversions<span class="task-score icon full"></span></a><a  href="/dsa24k/task/3054">Same bits<span class="task-score icon full"></span></a><a  href="/dsa24k/task/2643">Repeat<span class="task-score icon "></span></a><a  href="/dsa24k/task/3052">Efficiency test<span class="task-score icon "></span></a><a  href="/dsa24k/task/3248">Sequence of numbers<span class="task-score icon "></span></a><a  href="/dsa24k/task/3051">Time complexities<span class="task-score icon "></span></a><a  href="/dsa24k/task/2821">Rectangles<span class="task-score icon "></span></a><hr />    <h4>Your submissions</h4>
+
+    <a class="" href="/dsa24k/result/0000/">2000-01-01 11:42:69 <span class="task-score icon full"></span></a></div>
+</div>
