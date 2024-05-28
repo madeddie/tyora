@@ -10,6 +10,7 @@ from requests_toolbelt import user_agent
 
 from .utils import find_link, parse_form
 
+HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT", 10))
 logger = logging.getLogger(__name__)
 
 try:
@@ -32,6 +33,10 @@ class MoocfiCsesSession(requests.Session):
         self.headers.update(
             {"User-Agent": user_agent(os.path.basename(sys.argv[0]), __version__)}
         )
+
+    def request(self, *args, **kwargs):
+        kwargs.setdefault("timeout", HTTP_TIMEOUT)
+        return super(MoocfiCsesSession, self).request(*args, **kwargs)
 
     @property
     def is_logged_in(self) -> bool:
