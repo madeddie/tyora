@@ -83,3 +83,17 @@ def test_client_get_task_incomplete_no_submit_link(mock_session: Session) -> Non
         == "The course material includes two different ways to implement the function\n`count_even`:\n\n    \n    \n    # implementation 1\n    def count_even(numbers):\n        result = 0\n        for x in numbers:\n            if x % 2 == 0:\n                result += 1\n        return result\n    \n    \n    \n    # implementation 2\n    def count_even(numbers):\n        return sum(x % 2 == 0 for x in numbers)\n    \n\nCompare the efficiencies of the two implementations using a list that contains\n10^7 randomly chosen numbers.\n\nIn this exercise, you get a point automatically when you submit the test\nresults and the code that you used.\n\nImplementation 1 run time:  s\n\nImplementation 2 run time:  s\n\nThe code you used in the test:"
     )
     assert task.submit_link is None
+
+
+def test_client_submit_task(mock_session: Session) -> None:
+    client = Client(session=mock_session)
+
+    with requests_mock.Mocker() as m:
+        m.post(
+            "https://example.com/submit/3055",
+            text=open("tests/test_data/submit_3055_success.html").read(),
+        )
+        result = client.submit_task(
+            "3055", "print('Hello, World!')\n", filename="test.py"
+        )
+    assert result == "Success"

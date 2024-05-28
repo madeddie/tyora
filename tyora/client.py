@@ -171,15 +171,6 @@ def parse_task(html: AnyStr) -> Task:
     return task
 
 
-# def submit_task(task_id: str, filename: str) -> None:
-#     """submit file to the submit form or task_id"""
-#     html = session.http_request(urljoin(base_url, f"task/{task_id}"))
-#     task = parse_task(html)
-#     answer = input("Do you want to submit this task? (y/n): ")
-#     if answer in ('y', 'Y'):
-#         with open(filename, 'r') as f:
-
-
 # TODO test with failing results
 # Seems to be broken since the switch to html5lib, needs tests!
 def parse_submit_result(html: AnyStr) -> dict[str, str]:

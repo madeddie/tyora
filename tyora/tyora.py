@@ -6,16 +6,11 @@ import sys
 from getpass import getpass
 from pathlib import Path
 from time import sleep
-from typing import Optional
+from typing import Optional, no_type_check
 
 import platformdirs
 
-from .client import (
-    Client,
-    Task,
-    TaskState,
-    parse_submit_result,
-)
+from .client import Client, Task, TaskState, parse_submit_result
 from .session import MoocfiCsesSession as Session
 
 logger = logging.getLogger(name="tyora")
@@ -29,6 +24,8 @@ CONF_FILE = platformdirs.user_config_path(PROG_NAME) / "config.json"
 STATE_DIR = platformdirs.user_state_path(f"{PROG_NAME}")
 
 
+# Disable typechecking for the argparse function calls since we ignore most returned values
+@no_type_check
 def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Interact with mooc.fi CSES instance")
     parser.add_argument(
@@ -226,7 +223,7 @@ def main() -> None:
 
     if args.cmd == "submit":
         # TODO allow user to paste the code in or even pipe it in
-        with open(args.filename, "r") as f:
+        with open(args.filename) as f:
             submission_code = f.read()
 
         result_url = client.submit_task(
