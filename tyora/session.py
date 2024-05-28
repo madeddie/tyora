@@ -10,7 +10,7 @@ from requests_toolbelt import user_agent
 
 from .utils import find_link, parse_form
 
-HTTP_TIMEOUT = 10
+HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT", 10))
 logger = logging.getLogger(__name__)
 
 try:
