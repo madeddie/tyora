@@ -82,11 +82,12 @@ class MoocfiCsesSession(requests.Session):
         login_form["session[login]"] = username
         login_form["session[password]"] = password
 
-        _ = self.post(
+        res = self.post(
             url=urljoin(res.url, action),
             headers={"referer": res.url},
             data=login_form,
         )
+        res.raise_for_status()
 
         if not self.is_logged_in:
             logger.debug(
